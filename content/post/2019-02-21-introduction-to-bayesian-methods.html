@@ -1,0 +1,410 @@
+---
+title: Introduction to Bayesian Methods
+author: Govind G Nair
+date: '2019-02-21'
+slug: introduction-to-bayesian-methods
+categories:
+  - Stats
+  - Bayesian
+tags:
+  - Bayesian
+---
+
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>This post will cover the following topics</p>
+<ol style="list-style-type: decimal">
+<li>Differences between Bayesian and Frequentist Approaches</li>
+<li>A Simple Bayesian Analysis</li>
+<li>Simple Bayesian Linear Regression</li>
+</ol>
+</div>
+<div id="bayesianism-vs-frequentism" class="section level1">
+<h1>Bayesianism vs Frequentism</h1>
+<p>In the simplest terms, in Frequentism <strong>parameters are fixed</strong> while <strong>data can vary</strong>.Whereas, in Bayesianism <strong>parameters can vary</strong> while <strong>data is fixed</strong></p>
+<p>For frequentists,probability only has meaning in terms of <strong>a limiting case of repeated measurements</strong>, it is fundamentally related to the <strong>frequencies of events</strong>.</p>
+<p>For example, think of a factory that makes biased coins.We gather several coins made by the factory (assume that the factory equipment has 100% precision), and flip each of them N times, measuring the number of times heads is seen. Each time you would get a slightly different answer because of the way you hold the coin or how much force you applied when flipping the coin.</p>
+<p>In the limit of a large number of measurements, the frequency of any given value indicates the probability of measuring that value. This means it is meaningless to talk about the probability of the true bias of the factory, this true bias is a fixed value and it cannot assume any kind of frequency distribution.</p>
+<p>For Bayesians, the concept of probability is extended to cover degrees of certainty about statements. <strong>Probabilities are fundamentally related to our knowledge of an event</strong>. Therefore Bayesians can meaningfully talk about the true bias of the factory, this probability only codifies <strong>our knowledge</strong> of the true bias of the factory based on prior knowledge and data.</p>
+<div id="confidence-intervals-vs-credible-intervals" class="section level2">
+<h2>Confidence Intervals vs Credible Intervals</h2>
+<p>The Bayesian analogue of the commonly used Frequentist Confidence Interval is the Credible Interval.
+Although both sound similar and often yield identical results, their interpretations are quite different.</p>
+<p>In Bayesianism, probability distributions reflect degrees of belief, so a 95 % credible interval [a,b]
+of a parameter <span class="math inline">\(\mu\)</span> is equivalent to saying:</p>
+<p><em>Given our observed data, there is a 95% probability that the true value of <span class="math inline">\(\mu\)</span> falls within the credible interval [a,b]</em></p>
+<p>The frequentist 95% confidence interval [a,b] is equivalent to saying</p>
+<p><em>There is a 95% probability that when I compute this confidence interval from <strong>data of this sort</strong>, the true mean will fall within this confidence interval</em></p>
+<p>Note the difference: the Bayesian solution is a statement of probability about the parameter value given fixed bounds. It fixes the credible region, and guarantees that 95% of possible values of <span class="math inline">\(\mu\)</span> fall within it.</p>
+<p>The frequentist solution is a probability about the bounds or intervals given a fixed parameter value. It fixes that parameter and guarantees that 95% of possible confidence intervals will contain it.</p>
+<p>A criticism of frequentist inference is that it often answers the wrong question. It relies on <strong>data of this sort</strong> or a hypothetical space of observations like what we have observed so far. This may lead one to answers that don’t tell you anything meaningful about the particular data observed.</p>
+<p>If you want to ask what the confidence interval can tell you <em>given the particular data already observed</em>, all it can say is that: <em>Given the observed data, the true value of <span class="math inline">\(\mu\)</span> is either in the confidence interval or it isn’t</em>. If you are only interested in what particular observed data is telling you, frequentism is not very useful.</p>
+</div>
+<div id="null-hypothesis-significance-testing" class="section level2">
+<h2>Null Hypothesis Significance Testing</h2>
+<p>Consider some data we received from an experimenter who was measuring the bias of a coin. The data indicates that were 7 HEADS (z) out of a total of 24 tosses (N).</p>
+<div id="frequentist-approach" class="section level3">
+<h3>Frequentist Approach</h3>
+<p>Experimental design or setup is very important when using frequentist approaches.In other words the intent of the experimenter has an impact on the inferences we make.</p>
+<p>The null hypothesis we want to evaluate is:</p>
+<p>H0: The bias of the coin is 0.5 or alternatively
+H0: <span class="math display">\[\theta = 0.5\]</span></p>
+<p>To evaluate whether the observation suggests that the coin is biased ,we need to calculate the p-value.
+The p-value is the probability of getting a sample outcome from the sampling distribution that is as or more extreme than the actual outcome.</p>
+<p>Now the sampling distribution depends on the intent of the experimenter which can be
+1. Did he do the experiment with the intent to record 24 coin flips
+2. Did he continue the experiment until he observed 7 HEADs</p>
+<p>If the experimented did not tell us what his intent for the experiment was, we could reach two different conclusions based on the same data.</p>
+</div>
+<div id="for-fixed-n" class="section level3">
+<h3>For fixed N</h3>
+<p>If the experimenter’s intent was the first one listed above. The sampling distribution and the p- value
+are obtained by consider a binomial probability distribution.</p>
+<p>The p-value is given by:</p>
+<pre class="r"><code>p_value &lt;- pbinom(7,24,0.5)
+print(p_value)</code></pre>
+<pre><code>## [1] 0.03195733</code></pre>
+<p>The sampling distribution is given below.</p>
+<pre class="r"><code>library(ggplot2)
+
+z &lt;- c(0:24)
+P &lt;- dbinom(c(0:24),24,prob = 0.5)
+
+
+ggplot(data.frame(z,P),aes(x=z,y=P)) + geom_bar(stat = &#39;identity&#39;,fill = &#39;cornflowerblue&#39;)+
+  geom_vline(xintercept =7,col=&#39;red&#39;)+
+  geom_segment(aes(x=7,y = 0.025,xend = 0,yend=0.025),
+               arrow = arrow(length = unit(0.02,&quot;npc&quot;)))+
+  geom_text(aes(x = 4, y =0.04),label=paste0(&#39;P value = &#39;,round(p_value,3)))</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+</div>
+<div id="for-fixed-z" class="section level3">
+<h3>For fixed z</h3>
+<p>If the experimenter’s intent was the second one listed above i.e. to continue the experiment until he sees 7 HEADS, the sampling distribution and the p- value are obtained by considering a negative binomial probability distribution.</p>
+<p>The p-value is given by:</p>
+<pre class="r"><code>n_heads =7
+n_tails = 16
+
+p_value &lt;-  1 - pnbinom(n_tails, n_heads,0.5)
+print(p_value)</code></pre>
+<pre><code>## [1] 0.01734483</code></pre>
+<p>The sampling distribution is given below.</p>
+<pre class="r"><code>library(ggplot2)
+
+N &lt;- c(0:50) # Number of possible tails observed before 7th head is observed
+P &lt;- dnbinom(N,size = 7,prob = 0.5)
+
+ggplot(data.frame(N,P),aes(x= N,y=P)) + geom_bar(stat = &#39;identity&#39;,fill = &#39;cornflowerblue&#39;)+ geom_vline(xintercept = 24 ,col=&#39;red&#39;)+
+   geom_segment(aes(x= 24,y = 0.025,xend = 50,yend=0.025),
+                arrow = arrow(length = unit(0.02,&quot;npc&quot;)))+
+   geom_text(aes(x = 30, y =0.04),label=paste0(&#39;P value = &#39;,round(p_value,3)))</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>In both cases above the null hypothesis can be rejected given the p-value is less than 0.05, but it can be seen that based on the intentions of the experimenter, the p-value can be different.</p>
+</div>
+<div id="bayesian-approach" class="section level3">
+<h3>Bayesian Approach</h3>
+<p>The Bayesian approach to hypothesis testing does not depend on the intentions of the experimenter.
+The likelihood function in this approach is the Binomial likelihood function, just as in the frequentist approach described above.</p>
+<p>In the Bayesian approach, we also need to choose a prior which encodes our prior belief about the fairness of the coin. To make the analysis easier the prior can be a Beta distribution which is conjugate of the binomial likelihood function.</p>
+<p>One possible Beta prior is Beta(2,2) which indicates a weak prior belief in the fairness of the coin. This encodes a distribution as shown below:</p>
+<pre class="r"><code>set.seed(0)
+plot(density(rbeta(10000,2,2)),main = &quot;Prior 1&quot;,xlab=&quot;&quot;)</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>Another possible prior is a strong belief in the tail bias of a coin.</p>
+<pre class="r"><code>set.seed(0)
+plot(density(rbeta(10000,2,20)),main = &quot;Prior 2&quot;,xlab=&quot;&quot;)</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>Note that while the frequentist approach above uses conditional distributions of data given a fixed hypothesis, e.g. <span class="math display">\[\theta = 0.5\]</span>, the bayesian uses a probability distribution over all possible hypotheses.</p>
+<p>The posterior distribution over all possible hypotheses is given by the Baye’s rule.</p>
+<p><span class="math display">\[P(H|D) = \frac{P(D|H) P(H)}{P(D)}\]</span></p>
+<p>Now H is a hypothesis and D is data which may give evidence for or against H. Each term
+in Bayes’ formula has a name and a role.</p>
+<ul>
+<li>The prior P(H) is the probability that H is true before the data is considered.</li>
+<li>The posterior P(H | D) is the probability that H is true after the data is considered.</li>
+<li>The likelihood P(D | H) is the evidence about H provided by the data D.</li>
+<li>P(D) is the total probability of the data taking into account all possible hypotheses</li>
+</ul>
+<p>For the prior 1 considered above the posterior will be a Beta(2+7,2+17)</p>
+<pre class="r"><code>plot(density(rbeta(10000,9,19)),main = &quot;Posterior 1&quot;,xlab=expression(theta))</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>For the prior 2 considered above the posterior will be a Beta(2+7,20+17)</p>
+<pre class="r"><code>plot(density(rbeta(10000,9,37)),main = &quot;Posterior 2&quot;,xlab=expression(theta))</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>In summary, according to the statistician Larry Wasserman:</p>
+<p><strong>The Goal of Frequentist Inference:</strong> Construct procedure with frequency guarantees. (For example, confidence intervals.)</p>
+<p><strong>The Goal of Bayesian Inference:</strong> Quantify and manipulate your degrees of beliefs. In other words, Bayesian inference is the Analysis of Beliefs.</p>
+</div>
+</div>
+</div>
+<div id="simple-bayesian-analysis-using-mcmc" class="section level1">
+<h1>Simple Bayesian Analysis using MCMC</h1>
+<p><span class="math display">\[P(H|D) = \frac{P(D|H) P(H)}{P(D)}\]</span>
+For computing the expression above one has to calculate the term P(D) which for complex models involves the calculation of very complex integrals that are not analytically tractable. The most commonly used alternative to this is Markov Chain Monte Carlo, which allows for the estimation of the posterior, without calculating the complex integral.</p>
+<p>The estimation of the bias of a coin in the example above can be carried out using MCMC. JAGS (Just Another Gibbs Sampler) is a software package that provides an MCMC sampler that can be used for this. JAGS can be be accessed in R using the rjags package.</p>
+<pre class="r"><code>source(&quot;utilities.R&quot;)</code></pre>
+<pre><code>## 
+## *********************************************************************
+## Kruschke, J. K. (2015). Doing Bayesian Data Analysis, Second Edition:
+## A Tutorial with R, JAGS, and Stan. Academic Press / Elsevier.
+## *********************************************************************</code></pre>
+<pre class="r"><code>require(rjags)
+require(coda)</code></pre>
+<p>The data to be analyzed is a sequence of coin tosses with 7 heads (represented by 1) and 17 tails (represented by 0).</p>
+<pre class="r"><code>y &lt;- c(rep(1,7),rep(0,17))
+#Get number of observations
+Ntotal &lt;- length(y)
+#Wrap the data in a list for later shipment to JAGS
+dataList&lt;- list(y=y,Ntotal= Ntotal)</code></pre>
+<p>Now specify the first model with the weak prior.</p>
+<pre class="r"><code>model1 &lt;- 
+  &quot;
+  model{
+  for(i in 1:Ntotal){
+  y[i] ~ dbern( theta ) #likelihood
+
+  }
+  theta ~ dbeta(2,2) # prior
+  }
+  &quot;</code></pre>
+<p>And the second model with the strong prior.</p>
+<pre class="r"><code>model2 &lt;- 
+  &quot;
+  model{
+  for(i in 1:Ntotal){
+  y[i] ~ dbern(theta) #likelihood
+
+  }
+  theta ~ dbeta(2,20) #prior
+  }
+  &quot;</code></pre>
+<p>Now initialize the MCMC chain, the MLE estimate of the chosen likelihood function is a suitable candidate.</p>
+<pre class="r"><code>thetaInit &lt;- sum(y)/length(y)
+initsList &lt;- list(theta = thetaInit)</code></pre>
+<p>Now we can run the chains, when running the chains it is typical to specify a burn in period so as to discard the few initial values before the chain has settled on the true posterior. The number of steps to be taken to tune/adapt the samplers can also be specified.</p>
+<pre class="r"><code>parameters = c( &quot;theta&quot;)     # The parameters to be monitored
+adaptSteps = 500             # Number of steps to adapt/tune the samplers
+burnInSteps = 500            # Number of steps to burn-in the chains
+nChains = 4                  # nChains should be 2 or more for diagnostics </code></pre>
+<p>Specify the model in JAGS</p>
+<pre class="r"><code># Create, initialize, and adapt the model:
+  jagsModel1 = jags.model(textConnection(model1) , data=dataList , inits=initsList , 
+                          n.chains=nChains , n.adapt=adaptSteps )</code></pre>
+<pre><code>## Compiling model graph
+##    Resolving undeclared variables
+##    Allocating nodes
+## Graph information:
+##    Observed stochastic nodes: 24
+##    Unobserved stochastic nodes: 1
+##    Total graph size: 27
+## 
+## Initializing model</code></pre>
+<pre class="r"><code>  jagsModel2 = jags.model(textConnection(model2) , data=dataList , inits=initsList , 
+                          n.chains=nChains , n.adapt=adaptSteps )</code></pre>
+<pre><code>## Compiling model graph
+##    Resolving undeclared variables
+##    Allocating nodes
+## Graph information:
+##    Observed stochastic nodes: 24
+##    Unobserved stochastic nodes: 1
+##    Total graph size: 28
+## 
+## Initializing model</code></pre>
+<p>Let the chains burn in..</p>
+<pre class="r"><code> # Burn-in:
+  cat( &quot;Burning in the MCMC chain...\n&quot; )</code></pre>
+<pre><code>## Burning in the MCMC chain...</code></pre>
+<pre class="r"><code>  update( jagsModel1 , n.iter=burnInSteps )
+  update( jagsModel2 , n.iter=burnInSteps )</code></pre>
+<p>Save the mcmc samples..n.iter gives number of steps to save per chain..</p>
+<pre class="r"><code>  # The saved MCMC chain:
+  cat( &quot;Sampling final MCMC chain...\n&quot; )</code></pre>
+<pre><code>## Sampling final MCMC chain...</code></pre>
+<pre class="r"><code>  codaSamples1 = coda.samples( jagsModel1 , variable.names=parameters , 
+                              n.iter=2500)
+  codaSamples2 = coda.samples( jagsModel2 , variable.names=parameters , 
+                              n.iter=2500)</code></pre>
+<p>Now the MCMC chains should be diagnosed for
+1) Representativeness
+2) Accuracy
+3) Efficiency</p>
+<p>These attributes are analyzed below.</p>
+<pre class="r"><code>diagMCMC( codaSamples1 , parName=&quot;theta&quot;)</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<p>The plot in the top left hand corner is a trace plot. If you see an orphaned chain exploring values that are not close to values being explored by the other chains, it is a symptom of incomplete convergence.</p>
+<p>The density plot in the bottom right hand corner indicates that the posterior explored by each of the 4 MCMC chains are adequately superimposed, which indicates convergence.</p>
+<p>The plot in the bottom left hand corner shows the shrink-factor, more formally called the ‘Brooks-Gelman-Ruben’ statistic.It is a measure of the ratio of between chain variance to within chain variance.If there is convergence this ratio should be close to 1.</p>
+<p>The plot on the top right hand corner shows the auto correlation of the MCMC chains. Highly autocorrelated chains do not yield additional information in successive steps, which requires the use of longer chains.This is also captured through the Expected Sample Size, A highly auto correlated chain will yield a much smaller ESS than the steps actually sampled.</p>
+<p>For accurate and stable estimates of the 95% HDI limits, an ESS of 10,000 is often recommended.</p>
+<p>Now the posterior distribution can be analyzed. A few terms are handy in the analysis of the posterior distribution.</p>
+<p>95% HDI: This range included 95% of the total probability in the distribution such that the density at any point inside the interval is greater than the density of any point outside the interval.</p>
+<p>ROPE: Region of Practical Equivalence. This is used to define a margin of error around any specific value we are interested. For example although an unbiased coin has a P(H) = 0.5 , for practical purposes, we might consider any probability between 0.45 and 0.55 to be practically equivalent to 0.5</p>
+<pre class="r"><code>plotMCMC(codaSamples1,data = data.frame(y), compVal=0.5 , rope=c(0.45,0.55))</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<pre class="r"><code>plotMCMC(codaSamples2,data = data.frame(y), compVal=0.5 , rope=c(0.45,0.55))</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+</div>
+<div id="simple-bayesian-linear-regression" class="section level1">
+<h1>Simple Bayesian Linear Regression</h1>
+<p>This is an example of simple linear regression in Stan, a cutting edge Bayesian software that uses a different MCMC algorithm called Hamiltonian Monte Carlo. R Studio provides auto completion and syntax correction for Stan programs.</p>
+<p>The data used is the commonly used mtcars data set and the relationship being studied is between mpg and displacement.</p>
+<pre class="r"><code>attach(mtcars)
+ggplot(data= mtcars,aes(x=disp,y=mpg)) + geom_point(fill=&#39;cornflowerblue&#39;)+
+  geom_smooth(method = &#39;lm&#39;)</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
+<p>The regression coefficients and fit statistics from the regression are as follows</p>
+<pre class="r"><code>summary(lm(mpg~disp,data=mtcars))</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = mpg ~ disp, data = mtcars)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -4.8922 -2.2022 -0.9631  1.6272  7.2305 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept) 29.599855   1.229720  24.070  &lt; 2e-16 ***
+## disp        -0.041215   0.004712  -8.747 9.38e-10 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 3.251 on 30 degrees of freedom
+## Multiple R-squared:  0.7183, Adjusted R-squared:  0.709 
+## F-statistic: 76.51 on 1 and 30 DF,  p-value: 9.38e-10</code></pre>
+<p>To do the same in Stan, you need to specify priors for the slope, intercept and error parameters.The noise distribution which in the case of simple linear regression can be a normal distribution.</p>
+<p><span class="math display">\[\hat{y} \sim  N(\beta_0 + \beta_1x, \sigma)\]</span></p>
+<p>The priors on <span class="math inline">\(\beta_0\)</span> and <span class="math inline">\(\beta_1\)</span> can be weakly informative priors on the scale of the data. .</p>
+<p><span class="math display">\[ \beta_0 \sim N(25,1000 )\]</span></p>
+<p><span class="math display">\[ \beta_1 \sim N(0,100 )\]</span></p>
+<p><span class="math display">\[ \sigma \sim Uniform(sd(Y)/1000,1000sd(Y))\]</span></p>
+<p>Specify data for shipment to Stan</p>
+<pre class="r"><code>library(rstan)
+dataList &lt;- list(
+  x &lt;- mtcars$disp,
+  y &lt;- mtcars$mpg,
+  sdy &lt;- sd(y),
+  Ntotal &lt;- length(y)
+)</code></pre>
+<p>Specify the model..</p>
+<pre class="stan"><code>
+data{
+  int&lt;lower=1&gt; Ntotal;
+  real x[Ntotal];
+  real y[Ntotal];
+  real sdy;
+}
+
+transformed data{
+real unifLo;
+real unifHi;
+unifLo = sdy/1000;
+unifHi = sdy*1000;
+}
+
+parameters{
+real beta0;
+real beta1;
+real &lt;lower=0&gt; sigma;
+
+}
+
+model{
+//Priors
+sigma ~ uniform(unifLo,unifHi);
+beta0 ~ normal(25,1000);
+beta1 ~ normal(0,100);
+//Likelihood
+for(i in 1:Ntotal){
+  y[i] ~ normal(beta0 + beta1*x[i], sigma);
+  }
+  
+}
+</code></pre>
+<p>Specify MCMC parameters..</p>
+<pre class="r"><code>  # RUN THE CHAINS
+  parameters = c( &quot;beta0&quot; ,  &quot;beta1&quot; ,  &quot;sigma&quot; )
+  adaptSteps = 500  # Number of steps to &quot;tune&quot; the samplers
+  burnInSteps = 1000
+  nChains = 4 
+  
+  ###Use multiple cores if available
+  options(mc.cores = parallel::detectCores()-1)</code></pre>
+<p>Get MCMC sample…</p>
+<pre class="r"><code># Get MC sample of posterior:
+  stanFit &lt;- sampling( object=stan_fit , 
+                       data = dataList , 
+                       #pars = parameters , # optional
+                       chains = nChains ,
+                       iter = 2500, #number of steps to sample from each chain
+                       warmup = burnInSteps  )</code></pre>
+<p>Get summary of the posterior distribution and MCMC diagnostics,,</p>
+<pre class="r"><code>fit_summary &lt;- summary(stanFit)
+print(fit_summary$summary)</code></pre>
+<pre><code>##              mean      se_mean          sd         2.5%          25%
+## beta0  29.5696491 2.625636e-02 1.293945251  27.11267961  28.68294770
+## beta1  -0.0410876 9.947395e-05 0.004946345  -0.05081334  -0.04438446
+## sigma   3.3939237 8.372453e-03 0.464829248   2.64657448   3.06761010
+## lp__  -53.1058270 2.706169e-02 1.273373018 -56.36666281 -53.67127032
+##                50%         75%      97.5%    n_eff      Rhat
+## beta0  29.55984704  30.4418262  32.136722 2428.637 0.9999554
+## beta1  -0.04105301  -0.0377471  -0.031559 2472.578 1.0001371
+## sigma   3.34727746   3.6574836   4.435199 3082.346 0.9996605
+## lp__  -52.77341431 -52.1817374 -51.661926 2214.122 1.0003161</code></pre>
+<p>These credible regression lines can be plotted against the original data to carry out a posterior predictive check..</p>
+<pre class="r"><code>library(tidyr)
+library(dplyr)
+library(magrittr)
+summary &lt;- data.frame(t(as.matrix(fit_summary$summary)))
+summary$X &lt;- rownames(summary)
+summary &lt;- summary %&gt;%
+                  select(X,beta0,beta1)%&gt;%
+                     filter( grepl(&#39;%&#39;, X))
+                    
+ggplot(mtcars,aes(x=disp,y=mpg)) + geom_point()+
+  geom_abline(data=summary,aes(slope = beta1,intercept=beta0,col =X))+
+    theme(legend.title = element_blank())</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-28-1.png" width="672" /></p>
+<p>Th posterior distributions can be visualized..</p>
+<pre class="r"><code>stan_dens(stanFit)</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-29-1.png" width="672" /></p>
+<p>This certainly looks like a lot more work then fitting a simple linear model.To make Bayesian modeling easier packages like rstanarm provide a convenient wrapper around Stan.</p>
+<pre class="r"><code>library(rstanarm)
+stan_glm2 &lt;- stan_glm(mpg~disp, data = mtcars, family = &#39;gaussian&#39;,
+                      prior = normal(0,100),prior_intercept = normal(25,1000),
+                      chains = 4,iter =2500,cores=4)</code></pre>
+<p>The posterior parameter estimates of the model are again very similar to that in the frequentist approach</p>
+<pre class="r"><code>posterior_interval(stan_glm2,prob=0.95)</code></pre>
+<pre><code>##                    2.5%       97.5%
+## (Intercept) 26.99254181 32.20352646
+## disp        -0.05107572 -0.03123249
+## sigma        2.61585260  4.39277459</code></pre>
+<p>Again note here that it is a valid assertion to make that there is a 95% probability that the parameter lies in the range given above. We cannot make such a statement based on a frequentist confidence interval.</p>
+<p>Predictions on new data can be made as follows:</p>
+<pre class="r"><code>preds &lt;- posterior_predict(stan_glm2,newdata = data.frame(disp = c(97,324)))</code></pre>
+<p>Note that the prediction is not a point prediction but a posterior predictive distribution which encodes the residual uncertainty after updating our prior beliefs about the parameters using available data.</p>
+<pre class="r"><code>par(mfrow=c(1,2))
+hist(preds[,1],main = &#39;Prediction for disp =97&#39;,col=&#39;blue&#39;,xlab=&#39;mpg&#39;)
+hist(preds[,2],main = &#39;Prediction for disp =324&#39;,col=&#39;blue&#39;,xlab=&#39;mpg&#39;)</code></pre>
+<p><img src="/post/2019-02-21-introduction-to-bayesian-methods_files/figure-html/unnamed-chunk-33-1.png" width="672" /></p>
+</div>
+<div id="references-and-additional-resources" class="section level1">
+<h1>References and Additional Resources</h1>
+<ol style="list-style-type: decimal">
+<li><p>Jake Van Der Plas on Frequentism and Bayesianism <a href="http://jakevdp.github.io/blog/2014/03/11/frequentism-and-bayesianism-a-practical-intro/">link</a></p></li>
+<li><p>Larry Wasserman on Frequentism and Bayesianism <a href="https://normaldeviate.wordpress.com/2012/11/17/what-is-bayesianfrequentist-inference/">link</a></p></li>
+<li><p>Michael BetanCourt on a Principled Bayesian Workflow <a href="https://betanalpha.github.io/assets/case_studies/principled_bayesian_workflow.html#5_close_enough_for_an_effective_demonstration">link</a></p></li>
+<li><p>Stan installation instructions <a href="https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started">link</a></p></li>
+<li><p>Getting started with rstanarm <a href="https://cran.r-project.org/web/packages/rstanarm/vignettes/rstanarm.html">link</a></p></li>
+<li><p>R Stan Case Studies <a href="https://mc-stan.org/users/documentation/case-studies">link</a></p></li>
+<li><p>Books</p></li>
+</ol>
+<ol style="list-style-type: lower-roman">
+<li><p>Doing Bayesian Data Analysis: A Tutorial with R, JAGS and STAN <a href="https://www.amazon.com/Doing-Bayesian-Data-Analysis-Tutorial/dp/0123814855">link</a></p></li>
+<li><p>Statistical Rethinking <a href="https://www.amazon.com/Statistical-Rethinking-Bayesian-Examples-Chapman/dp/1482253445/ref=pd_lpo_sbs_14_t_2?_encoding=UTF8&amp;psc=1&amp;refRID=NGXMGE8HJARE7YGFRPJ6">link</a></p></li>
+<li><p>Bayesian Data Analysis <a href="https://www.amazon.com/Bayesian-Analysis-Chapman-Statistical-Science/dp/B00BUW5F9I/ref=asc_df_B00BUW5F9I/?tag=hyprod-20&amp;linkCode=df0&amp;hvadid=241914467431&amp;hvpos=1o1&amp;hvnetw=g&amp;hvrand=5741014256641214598&amp;hvpone=&amp;hvptwo=&amp;hvqmt=&amp;hvdev=c&amp;hvdvcmdl=&amp;hvlocint=&amp;hvlocphy=9021710&amp;hvtargid=pla-571877405697&amp;psc=1">link</a></p></li>
+</ol>
+<p>Code used to make this report is available at this <a href="https://github.com/govindgnair23/Intro-to-Bayesian-Methods">link</a></p>
+</div>

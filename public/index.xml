@@ -12,6 +12,17 @@
     
     
     <item>
+      <title>Introduction to Bayesian Methods</title>
+      <link>/2019/02/21/introduction-to-bayesian-methods/</link>
+      <pubDate>Thu, 21 Feb 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/2019/02/21/introduction-to-bayesian-methods/</guid>
+      <description>IntroductionThis post will cover the following topics
+Differences between Bayesian and Frequentist ApproachesA Simple Bayesian AnalysisSimple Bayesian Linear RegressionBayesianism vs FrequentismIn the simplest terms, in Frequentism parameters are fixed while data can vary.Whereas, in Bayesianism parameters can vary while data is fixed
+For frequentists,probability only has meaning in terms of a limiting case of repeated measurements, it is fundamentally related to the frequencies of events.</description>
+    </item>
+    
+    <item>
       <title>A Plain Markdown Post</title>
       <link>/2016/12/30/a-plain-markdown-post/</link>
       <pubDate>Fri, 30 Dec 2016 21:49:57 -0700</pubDate>
@@ -28,7 +39,7 @@
       
       <guid>/about/</guid>
       <description>My name is Govind G Nair. I am a Technical Product Manager @ Oracle where I work on building AI and ML powered products that enable Financial Institutions to better prevent and detect Money Laundering and thus make our financial system safer.
-I am a data scientist, an aspiring product manager and an infinite learner constantly seeking to become wiser every single day.
+I am a data scientist, a newbie product manager and an infinite learner constantly seeking to become wiser every single day.
  Wisdom is not a product of schooling but the lifelong attempt to acquire it - Albert Einstein</description>
     </item>
     

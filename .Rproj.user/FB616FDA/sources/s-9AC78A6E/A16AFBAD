@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1587224408811.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4194623345",
+    "id" : "A16AFBAD",
+    "lastKnownWriteTime" : 1587224783,
+    "last_content_update" : 1587224783350,
+    "path" : "~/Blogs/R Studio Blog/content/post/2019-02-21-introduction-to-bayesian-methods.Rmd",
+    "project_path" : "content/post/2019-02-21-introduction-to-bayesian-methods.Rmd",
+    "properties" : {
+        "cursorPosition" : "18,9",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
