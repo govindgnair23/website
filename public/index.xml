@@ -12,6 +12,17 @@
     
     
     <item>
+      <title>Introduction to Gaussian Processes</title>
+      <link>/2019/08/11/introduction-to-gaussian-processes/</link>
+      <pubDate>Sun, 11 Aug 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/2019/08/11/introduction-to-gaussian-processes/</guid>
+      <description>Gaussian DistributionsFundamental to understanding a Gaussian process is a Gaussian distribution.The 1 dimensional version of the Gaussian distribution is the Normal distribution or the Bell Curve.
+The plot of a standard normal distribution with mean 0 and variance 1 is shown below. Note that the curve doesn’t look like a perfect bell as the data has been simulated
+set.seed(0)plot(density(rnorm(100000)),main = bquote(&amp;quot;N(&amp;quot;~mu~&amp;quot;=0,&amp;quot;~sigma^2~&amp;quot;=1)&amp;quot;))A bi-variate Gaussian distribution is simply a Gaussian distribution in 2 dimensions.</description>
+    </item>
+    
+    <item>
       <title>Introduction to Bayesian Methods</title>
       <link>/2019/02/21/introduction-to-bayesian-methods/</link>
       <pubDate>Thu, 21 Feb 2019 00:00:00 +0000</pubDate>
@@ -23,16 +34,6 @@ For frequentists,probability only has meaning in terms of a limiting case of rep
     </item>
     
     <item>
-      <title>A Plain Markdown Post</title>
-      <link>/2016/12/30/a-plain-markdown-post/</link>
-      <pubDate>Fri, 30 Dec 2016 21:49:57 -0700</pubDate>
-      
-      <guid>/2016/12/30/a-plain-markdown-post/</guid>
-      <description>This is a post written in plain Markdown (*.md) instead of R Markdown (*.Rmd). The major differences are:
- You cannot run any R code in a plain Markdown document, whereas in an R Markdown document, you can embed R code chunks (```{r}); A plain Markdown post is rendered through Blackfriday, and an R Markdown document is compiled by rmarkdown and Pandoc.  There are many differences in syntax between Blackfriday&amp;rsquo;s Markdown and Pandoc&amp;rsquo;s Markdown.</description>
-    </item>
-    
-    <item>
       <title>About</title>
       <link>/about/</link>
       <pubDate>Thu, 05 May 2016 21:48:51 -0700</pubDate>
@@ -41,26 +42,6 @@ For frequentists,probability only has meaning in terms of a limiting case of rep
       <description>My name is Govind G Nair. I am a Technical Product Manager @ Oracle where I work on building AI and ML powered products that enable Financial Institutions to better prevent and detect Money Laundering and thus make our financial system safer.
 I am a data scientist, a newbie product manager and an infinite learner constantly seeking to become wiser every single day.
  Wisdom is not a product of schooling but the lifelong attempt to acquire it - Albert Einstein</description>
-    </item>
-    
-    <item>
-      <title>Hello R Markdown</title>
-      <link>/2015/07/23/hello-r-markdown/</link>
-      <pubDate>Thu, 23 Jul 2015 21:13:14 -0500</pubDate>
-      
-      <guid>/2015/07/23/hello-r-markdown/</guid>
-      <description>R MarkdownThis is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see http://rmarkdown.rstudio.com.
-You can embed an R code chunk like this:
-summary(cars)## speed dist ## Min. : 4.0 Min. : 2.00 ## 1st Qu.:12.0 1st Qu.: 26.00 ## Median :15.0 Median : 36.00 ## Mean :15.4 Mean : 42.98 ## 3rd Qu.</description>
-    </item>
-    
-    <item>
-      <title>Lorem Ipsum</title>
-      <link>/2015/01/01/lorem-ipsum/</link>
-      <pubDate>Thu, 01 Jan 2015 13:09:13 -0600</pubDate>
-      
-      <guid>/2015/01/01/lorem-ipsum/</guid>
-      <description>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</description>
     </item>
     
   </channel>
