@@ -1,0 +1,974 @@
+---
+title: R Studio Conference 2019
+author: Govind G Nair
+date: '2019-03-17'
+slug: r-studio-conference-2019
+categories:
+  - Data Science
+  - Machine Learning
+tags:
+  - Conference
+---
+
+<script src="/rmarkdown-libs/htmlwidgets/htmlwidgets.js"></script>
+<link href="/rmarkdown-libs/sequences/sequences.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/sunburst-binding/sunburst.js"></script>
+
+
+<p>This is a notebook summarizing what I learned at the R Studio Conference 2019 Links to all the talks and slide decks,including talks on how to use R in production at scale are available at <a href="https://github.com/kbroman/RStudioConf2019Slides" class="uri">https://github.com/kbroman/RStudioConf2019Slides</a></p>
+<p>Make sure the libraries being used in each section are installed.</p>
+<div id="reproducible-examples-with-reprex" class="section level2">
+<h2>Reproducible Examples with reprex</h2>
+<p>The reprex package allows you to create a minimal reproducible example that you can share if you are reporting an issue on Github or asking a question on stack overflow. Running the code chunk below after uncommenting will create a new web page with the code and the results that can be shared with others.</p>
+<pre class="r"><code># reprex({
+#   x &lt;- 1:4
+#   y &lt;- 2:5
+#   x + y
+# })</code></pre>
+</div>
+<div id="categorical-data-in-r" class="section level2">
+<h2>Categorical data in R</h2>
+<p>Factor variables in R can be idiosyncratic</p>
+<pre class="r"><code>x &lt;- c(20,20,10,40,20)
+cat(x)</code></pre>
+<pre><code>## 20 20 10 40 20</code></pre>
+<p>Converting this to a factor variable produces the following</p>
+<pre class="r"><code>xf &lt;- factor(x)
+xf</code></pre>
+<pre><code>## [1] 20 20 10 40 20
+## Levels: 10 20 40</code></pre>
+<p>Converting this factor back to numeric produces the following odd result</p>
+<pre class="r"><code>x &lt;- as.numeric(xf)
+x</code></pre>
+<pre><code>## [1] 2 2 1 3 2</code></pre>
+<p>The right way to carry out this conversion is as follows</p>
+<pre class="r"><code>x &lt;- as.numeric(as.character(xf))
+x</code></pre>
+<pre><code>## [1] 20 20 10 40 20</code></pre>
+<p>One also needs to be careful while re-ordering the levels of a factor</p>
+<pre class="r"><code>ratings1&lt;-  as.factor(c(rep(&#39;High&#39;,30),rep(&#39;Low&#39;,10),rep(&#39;Medium&#39;,20)))
+ratings2 &lt;- ratings1
+ratings3 &lt;- ratings1
+table(ratings1)</code></pre>
+<pre><code>## ratings1
+##   High    Low Medium 
+##     30     10     20</code></pre>
+<pre class="r"><code>cat(&#39;Levels: \n&#39;)</code></pre>
+<pre><code>## Levels:</code></pre>
+<pre class="r"><code>cat(levels(ratings1))</code></pre>
+<pre><code>## High Low Medium</code></pre>
+<p>We might want to change the levels of this variable to be Low,Medium,High</p>
+<p>The next couple of approaches do not yield expected results.</p>
+<pre class="r"><code>levels(ratings1) &lt;- levels(ratings1)[c(2,1,3)]
+table(ratings1)</code></pre>
+<pre><code>## ratings1
+##    Low   High Medium 
+##     30     10     20</code></pre>
+<pre class="r"><code>levels(ratings2) &lt;- c(&#39;Low&#39;,&#39;Medium&#39;,&#39;High&#39;)
+table(ratings2)</code></pre>
+<pre><code>## ratings2
+##    Low Medium   High 
+##     30     10     20</code></pre>
+<p>The correct approach here would be as follows</p>
+<pre class="r"><code>ratings3 &lt;- factor(ratings3,levels=c(&#39;Low&#39;,&#39;Medium&#39;,&#39;High&#39;))
+table(ratings3)</code></pre>
+<pre><code>## ratings3
+##    Low Medium   High 
+##     10     20     30</code></pre>
+<p>The <strong>forcats</strong> package by Hadley Wickham makes working with factors much more straightforward.</p>
+<pre class="r"><code>library(forcats)
+ratings1&lt;-  as.factor(c(rep(&#39;High&#39;,30),rep(&#39;Low&#39;,10),rep(&#39;Medium&#39;,20)))
+ratings1 &lt;- fct_relevel(ratings1,c(&#39;Low&#39;,&#39;Medium&#39;,&#39;High&#39;))
+table(ratings1)</code></pre>
+<pre><code>## ratings1
+##    Low Medium   High 
+##     10     20     30</code></pre>
+<p>Recoding the levels of the factors are also straightforward.</p>
+<pre class="r"><code>ratings1 &lt;- fct_recode(ratings1,Poor=&#39;Low&#39;,Fair =&#39;Medium&#39;,Good = &#39;High&#39;)
+table(ratings1)</code></pre>
+<pre><code>## ratings1
+## Poor Fair Good 
+##   10   20   30</code></pre>
+<p>Plenty of other useful functions are available in the forcats package.</p>
+</div>
+<div id="defensive-coding" class="section level2">
+<h2>Defensive Coding</h2>
+<p>The <strong>testthat</strong> and <strong>assertthat</strong> packages allows us to code defensively. This is typically best practice in software engineering and makes debugging much easier.</p>
+<p>For instance if a function is designed to accept a scalar (i.e. a vector of length 1), you may want
+the function to throw an error if a vector is passed into the function, so that you can adjust the function appropriately.</p>
+<pre class="r"><code>library(assertthat)
+
+is_odd &lt;- function(x) {
+  assert_that(is.numeric(x), length(x) == 1)
+  x %% 2 == 1
+}
+
+
+print(is_odd(3))</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code>print(is_odd(2))</code></pre>
+<pre><code>## [1] FALSE</code></pre>
+<pre class="r"><code>#is_odd(c(1,4)) ##Throws an error##</code></pre>
+<p>The see_if function returns a logical value and an error message as an attribute that allows execution to continue.</p>
+<pre class="r"><code>x &lt;- c(1,2)
+y &lt;- &#39;a&#39;
+see_if(is.numeric(x), length(x) == 1)</code></pre>
+<pre><code>## [1] FALSE
+## attr(,&quot;msg&quot;)
+## [1] &quot;length(x) not equal to 1&quot;</code></pre>
+<pre class="r"><code>see_if(is.numeric(y), length(y) == 1)</code></pre>
+<pre><code>## [1] FALSE
+## attr(,&quot;msg&quot;)
+## [1] &quot;y is not a numeric or integer vector&quot;</code></pre>
+<p>The testthat package provides functionality that is essential to software testing. This is useful if you are building packages or writing code that is meant to be used in production</p>
+<pre class="r"><code>library(testthat)
+
+#Check for equality within numerical tolerance
+expect_that(10,equals(10+1e-7))
+###Check for exact equality - Throws an error
+#expect_that(2*5, is_identical_to(10 + 1e-7))
+model &lt;- lm(mpg~wt,data=mtcars)
+expect_that(model,is_a(&quot;lm&quot;))
+###Throws an error
+#expect_that(model,is_a(&quot;glm&quot;))</code></pre>
+<p>If you are making a function you can use this to ensure that it produces warnings when expected.</p>
+<pre class="r"><code>#  Two functions below pass
+expect_that(log(-1), gives_warning())
+expect_that(log(-1),
+gives_warning(&quot;NaNs produced&quot;))
+
+# This one fails if run
+#expect_that(log(0), gives_warning())</code></pre>
+</div>
+<div id="new-features-in-r-studio-1.2" class="section level2">
+<h2>New Features in R Studio 1.2</h2>
+<p>R Studio 1.2 allows incorporation of SQL, Python , RCPP, Stan etc seamlessly into your workflow. The reticulate package allows you to use Python within R Studio.</p>
+<div id="python" class="section level3">
+<h3>Python</h3>
+<p>Note the bit below requires R Studio 1.2 and python’s Anaconda installation. Also you might encounter the issue described <a href="https://stackoverflow.com/questions/50085788/qt-platform-plugin-issue-rstudio">here</a> and will have to fix by adding the appropriate path to the environment variable</p>
+<pre class="r"><code>library(reticulate)
+use_condaenv(&quot;r-reticulate&quot;)</code></pre>
+<pre class="python"><code>import os
+os.environ[&#39;QT_QPA_PLATFORM_PLUGIN_PATH&#39;] = &#39;C:/Users/learningmachine/AppData/Local/Continuum/anaconda3/Library/plugins/platforms&#39;
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+x = np.arange(0.0,2,0.01)
+y = np.sin(2* np.pi*x)
+plt.plot(x,y)
+plt.grid(True)
+plt.show()</code></pre>
+<p><img src="/post/2019-03-17-r-studio-conference-2019_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<pre class="python"><code>data = pd.DataFrame({&#39;x&#39;:x,&#39;y&#39;:y})</code></pre>
+<p>A pandas dataframe can also be used within R.</p>
+<pre class="r"><code>library(ggplot2)
+ggplot(py$data,aes(x,y))+ geom_line(col=&#39;blue&#39;)</code></pre>
+<p><img src="/post/2019-03-17-r-studio-conference-2019_files/figure-html/unnamed-chunk-19-1.png" width="672" />
+SImilarly you can embed SQL or Stan code chunks in your markdown document.</p>
+</div>
+</div>
+<div id="parsnip---a-tidy-model-interface" class="section level2">
+<h2>Parsnip - A tidy model interface</h2>
+<pre class="r"><code>library(parsnip)
+library(tidymodels)
+library(glmnet)
+library(randomForest)</code></pre>
+<p>Parsnip is tidy version of the popular caret package being developed by Max Kuhn (who also developed caret).This package creates a unified interface to models, organizes them by model type (e.g. Logistic regression, splines etc)and generalizes how to fit them.</p>
+<p>First create a model specification</p>
+<pre><code>## Linear Regression Model Specification (regression)
+## 
+## Main Arguments:
+##   penalty = 0.01</code></pre>
+<p>The computation engine can be one of <strong>lm</strong>, <strong>glmnet</strong>,<strong>stan</strong>,<strong>spark</strong> or <strong>keras</strong>. Parsnip can translate this general syntax to the model’s argument.</p>
+<pre class="r"><code>reg_model %&gt;%
+  set_engine(&quot;glmnet&quot;)%&gt;%
+    translate()</code></pre>
+<pre><code>## Linear Regression Model Specification (regression)
+## 
+## Main Arguments:
+##   penalty = 0.01
+## 
+## Computational engine: glmnet 
+## 
+## Model fit template:
+## glmnet::glmnet(x = missing_arg(), y = missing_arg(), weights = missing_arg(), 
+##     lambda = 0.01, family = &quot;gaussian&quot;)</code></pre>
+<p>Note that data is not required for the model specification. Further although glmnet requires the predictors and target to be provided as X,y matrices , parsnip allows you to use a formula.</p>
+<pre class="r"><code>reg_model %&gt;%
+  set_engine(&quot;glmnet&quot;)%&gt;%
+    fit(mpg ~ .,data = mtcars)</code></pre>
+<pre><code>## parsnip model object
+## 
+## 
+## Call:  glmnet::glmnet(x = as.matrix(x), y = y, family = &quot;gaussian&quot;,      lambda = ~0.01) 
+## 
+##      Df   %Dev Lambda
+## [1,] 10 0.8687   0.01</code></pre>
+<p>The whole sequence of steps from specification to prediction can be done as follows</p>
+<pre class="r"><code>linear_reg(penalty =0.01) %&gt;%
+  set_engine(&quot;glmnet&quot;) %&gt;%
+    fit(mpg~.,dat =mtcars %&gt;% slice(1:29)) %&gt;% # train set
+      predict(new_data = mtcars %&gt;% slice(30:32)) #test set</code></pre>
+<pre><code>## # A tibble: 3 x 1
+##   .pred
+##   &lt;dbl&gt;
+## 1  17.9
+## 2  10.9
+## 3  25.6</code></pre>
+<p>If we want to fit the model using multiple penalty values:</p>
+<pre class="r"><code>preds &lt;- 
+  linear_reg() %&gt;%
+    set_engine(&quot;glmnet&quot;)%&gt;%
+      fit(mpg ~. , data = mtcars %&gt;% slice(1:29))%&gt;%
+        multi_predict(new_data = mtcars %&gt;% slice(30:32))
+
+
+print(preds)</code></pre>
+<pre><code>## # A tibble: 3 x 1
+##   .pred            
+##   &lt;list&gt;           
+## 1 &lt;tibble [80 x 2]&gt;
+## 2 &lt;tibble [80 x 2]&gt;
+## 3 &lt;tibble [80 x 2]&gt;</code></pre>
+<p>This produces a list of dataframes where each list contains predictions for all penalty values considered.
+To obtain the first 5 predictions for the second data point:</p>
+<pre class="r"><code>preds %&gt;% pull(.pred) %&gt;% pluck(2) %&gt;% slice(1:5)</code></pre>
+<pre><code>## # A tibble: 5 x 2
+##   penalty .pred
+##     &lt;dbl&gt; &lt;dbl&gt;
+## 1 0.00346  10.9
+## 2 0.00380  10.9
+## 3 0.00417  10.9
+## 4 0.00457  10.9
+## 5 0.00502  10.9</code></pre>
+<p>In the cases of models like random forest where certain data dependent parameters like <strong>mtry</strong> need to be specified,the model can be specified as follows:</p>
+<pre class="r"><code>mod &lt;- rand_forest(trees= 1000, mtry =floor(.preds() * 0.75)) %&gt;%
+        set_engine(&quot;randomForest&quot;)
+
+mod %&gt;% translate()</code></pre>
+<pre><code>## Random Forest Model Specification (unknown)
+## 
+## Main Arguments:
+##   mtry = floor(.preds() * 0.75)
+##   trees = 1000
+## 
+## Computational engine: randomForest 
+## 
+## Model fit template:
+## randomForest::randomForest(x = missing_arg(), y = missing_arg(), 
+##     mtry = floor(.preds() * 0.75), ntree = 1000)</code></pre>
+<p>Fit the model.</p>
+<pre class="r"><code>mod %&gt;% fit(mpg ~ ., data = mtcars)</code></pre>
+<pre><code>## parsnip model object
+## 
+## 
+## Call:
+##  randomForest(x = as.data.frame(x), y = y, ntree = ~1000, mtry = ~floor(.preds() *      0.75)) 
+##                Type of random forest: regression
+##                      Number of trees: 1000
+## No. of variables tried at each split: 7
+## 
+##           Mean of squared residuals: 5.622603
+##                     % Var explained: 84.02</code></pre>
+<p>As you can see, the number of predictors used is 75 % of the number of predictors in the data.</p>
+<pre class="r"><code>floor((ncol(mtcars) - 1) *0.75)</code></pre>
+<pre><code>## [1] 7</code></pre>
+</div>
+<div id="time-series-in-tidyverse" class="section level2">
+<h2>Time Series in Tidyverse</h2>
+<p>Tidy and Transform the data using the <strong>tsibble</strong> package and perform modelling/forecasting using <strong>fable</strong>.
+tsibble is a time series version of a tibble/dataframe.</p>
+<pre class="r"><code>library(tidyr)
+library(tsibble)
+library(lubridate)</code></pre>
+<p>We can use the EuStockMarkets data available in base R which is a ts object.</p>
+<pre class="r"><code>data(&quot;EuStockMarkets&quot;)</code></pre>
+<p>as_tibble can easily convert this into a tsibble in a long format. Here the index represents time and key identifies the variable that defines the series. Here each stock index ha a unique time stamp.</p>
+<pre class="r"><code>eu_ts &lt;- as_tsibble(EuStockMarkets)
+print(eu_ts)</code></pre>
+<pre><code>## # A tsibble: 7,440 x 3 [1s] &lt;UTC&gt;
+## # Key:       key [4]
+##    index               key   value
+##    &lt;dttm&gt;              &lt;chr&gt; &lt;dbl&gt;
+##  1 1991-07-01 02:18:28 DAX   1629.
+##  2 1991-07-02 12:00:00 DAX   1614.
+##  3 1991-07-03 21:41:32 DAX   1607.
+##  4 1991-07-05 07:23:05 DAX   1621.
+##  5 1991-07-06 17:04:37 DAX   1618.
+##  6 1991-07-08 02:46:09 DAX   1611.
+##  7 1991-07-09 12:27:42 DAX   1631.
+##  8 1991-07-10 22:09:14 DAX   1640.
+##  9 1991-07-12 07:50:46 DAX   1635.
+## 10 1991-07-13 17:32:18 DAX   1646.
+## # ... with 7,430 more rows</code></pre>
+<p>Given the index in seconds, the tsibble expects an entry for each second, so the index should be converted to day.</p>
+<pre class="r"><code>eu_ts2 &lt;-  eu_ts %&gt;%
+            mutate(index = as.Date(index))
+print(eu_ts2)</code></pre>
+<pre><code>## # A tsibble: 7,440 x 3 [1s]
+## # Key:       key [4]
+##    index      key   value
+##    &lt;date&gt;     &lt;chr&gt; &lt;dbl&gt;
+##  1 1991-07-01 DAX   1629.
+##  2 1991-07-02 DAX   1614.
+##  3 1991-07-03 DAX   1607.
+##  4 1991-07-05 DAX   1621.
+##  5 1991-07-06 DAX   1618.
+##  6 1991-07-08 DAX   1611.
+##  7 1991-07-09 DAX   1631.
+##  8 1991-07-10 DAX   1640.
+##  9 1991-07-12 DAX   1635.
+## 10 1991-07-13 DAX   1646.
+## # ... with 7,430 more rows</code></pre>
+<p>One can also calculate the average price of a week or month as follows.</p>
+<pre class="r"><code>eu_ts %&gt;%
+    index_by(Month = floor_date(index,&#39;month&#39;))%&gt;%
+        group_by(key)%&gt;%
+            summarize(Price =  mean(value))%&gt;% head()</code></pre>
+<pre><code>## # A tsibble: 6 x 3 [?] &lt;UTC&gt;
+## # Key:       key [1]
+##   key   Month               Price
+##   &lt;chr&gt; &lt;dttm&gt;              &lt;dbl&gt;
+## 1 CAC   1991-07-01 00:00:00 1753.
+## 2 CAC   1991-08-01 00:00:00 1800.
+## 3 CAC   1991-09-01 00:00:00 1871.
+## 4 CAC   1991-10-01 00:00:00 1851.
+## 5 CAC   1991-11-01 00:00:00 1814.
+## 6 CAC   1991-12-01 00:00:00 1693.</code></pre>
+<p>We can also check if there are gaps in the time series as follows.</p>
+<pre class="r"><code>has_gaps(eu_ts2)</code></pre>
+<pre><code>## # A tibble: 4 x 2
+##   key   .gaps
+##   &lt;chr&gt; &lt;lgl&gt;
+## 1 CAC   TRUE 
+## 2 DAX   TRUE 
+## 3 FTSE  TRUE 
+## 4 SMI   TRUE</code></pre>
+<p>You can get a 30 day rolling average of the process as follows. Note that the first 29 observations of the rolling mean will be NA.</p>
+<pre class="r"><code>eu_ts3 &lt;-  eu_ts2 %&gt;%
+            group_by(key) %&gt;%
+              mutate(avg_30day = slide_dbl(value,~mean(.,na.rm = TRUE),.size=30))
+
+print(eu_ts3 %&gt;% filter_index(&quot;1991-08-01&quot;~&quot;1991-09-01&quot;) )</code></pre>
+<pre><code>## # A tsibble: 88 x 4 [1D]
+## # Key:       key [4]
+## # Groups:    key [4]
+##    index      key   value avg_30day
+##    &lt;date&gt;     &lt;chr&gt; &lt;dbl&gt;     &lt;dbl&gt;
+##  1 1991-08-02 DAX   1620.       NA 
+##  2 1991-08-03 DAX   1620.       NA 
+##  3 1991-08-05 DAX   1623.       NA 
+##  4 1991-08-06 DAX   1614.       NA 
+##  5 1991-08-08 DAX   1632.       NA 
+##  6 1991-08-09 DAX   1630.       NA 
+##  7 1991-08-10 DAX   1633.     1624.
+##  8 1991-08-12 DAX   1627.     1624.
+##  9 1991-08-13 DAX   1650.     1625.
+## 10 1991-08-15 DAX   1650.     1627.
+## # ... with 78 more rows</code></pre>
+<p>Tsibble works well with ggplot2.</p>
+<pre class="r"><code>library(ggplot2)
+ggplot(eu_ts2,aes(x=index,y=value)) + geom_line()+
+  facet_wrap(.~key,ncol=1)</code></pre>
+<p><img src="/post/2019-03-17-r-studio-conference-2019_files/figure-html/unnamed-chunk-36-1.png" width="672" /></p>
+<p>Forecasting can be done using the fable package which is a tidy implementation of the classic forecast package by Rob Hyndman. This package is being developed by Hyndman’s student Earo Wang and is currently not available on CRAN</p>
+</div>
+<div id="model-representation-using-broom" class="section level2">
+<h2>Model representation using Broom</h2>
+<p>Use tidy() to summarize information about models
+Use glance() to report goodness of fit metrics
+Use augment() to add information about observations</p>
+<p>Produces outputs in a simple tibble</p>
+<p>The code below shows what we typically get when building a model</p>
+<pre class="r"><code>attach(mtcars)
+library(broom)
+ols_fit &lt;- lm(hp~ mpg + cyl, mtcars)
+summary(ols_fit)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = hp ~ mpg + cyl, data = mtcars)
+## 
+## Residuals:
+##    Min     1Q Median     3Q    Max 
+## -53.72 -22.18 -10.13  14.47 130.73 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)   
+## (Intercept)   54.067     86.093   0.628  0.53492   
+## mpg           -2.775      2.177  -1.275  0.21253   
+## cyl           23.979      7.346   3.264  0.00281 **
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 38.22 on 29 degrees of freedom
+## Multiple R-squared:  0.7093, Adjusted R-squared:  0.6892 
+## F-statistic: 35.37 on 2 and 29 DF,  p-value: 1.663e-08</code></pre>
+<p>Using tidy from the broom package we get:</p>
+<pre class="r"><code>tidy(ols_fit)</code></pre>
+<pre><code>## # A tibble: 3 x 5
+##   term        estimate std.error statistic p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+## 1 (Intercept)    54.1      86.1      0.628 0.535  
+## 2 mpg            -2.77      2.18    -1.27  0.213  
+## 3 cyl            24.0       7.35     3.26  0.00281</code></pre>
+<p>Using glance</p>
+<pre class="r"><code>glance(ols_fit)</code></pre>
+<pre><code>## # A tibble: 1 x 11
+##   r.squared adj.r.squared sigma statistic p.value    df logLik   AIC   BIC
+##       &lt;dbl&gt;         &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1     0.709         0.689  38.2      35.4 1.66e-8     3  -160.  329.  335.
+## # ... with 2 more variables: deviance &lt;dbl&gt;, df.residual &lt;int&gt;</code></pre>
+<p>Using augment gives information about each observation in the training data</p>
+<pre class="r"><code>augment(ols_fit)</code></pre>
+<pre><code>## # A tibble: 32 x 11
+##    .rownames    hp   mpg   cyl .fitted .se.fit .resid   .hat .sigma .cooksd
+##    &lt;chr&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;
+##  1 Mazda RX4   110  21       6   140.     6.84 -29.7  0.0320   38.5 0.00687
+##  2 Mazda RX~   110  21       6   140.     6.84 -29.7  0.0320   38.5 0.00687
+##  3 Datsun 7~    93  22.8     4    86.7   13.3    6.28 0.121    38.9 0.00141
+##  4 Hornet 4~   110  21.4     6   139.     7.00 -28.6  0.0335   38.5 0.00668
+##  5 Hornet S~   175  18.7     8   194.    12.8  -19.0  0.112    38.7 0.0117 
+##  6 Valiant     105  18.1     6   148.     8.75 -42.7  0.0524   38.0 0.0243 
+##  7 Duster 3~   245  14.3     8   206.     9.79  38.8  0.0656   38.2 0.0258 
+##  8 Merc 240D    62  24.4     4    82.3   11.6  -20.3  0.0924   38.7 0.0105 
+##  9 Merc 230     95  22.8     4    86.7   13.3    8.28 0.121    38.9 0.00246
+## 10 Merc 280    123  19.2     6   145.     7.47 -21.7  0.0382   38.7 0.00443
+## # ... with 22 more rows, and 1 more variable: .std.resid &lt;dbl&gt;</code></pre>
+<p>To compare multiple models on goodness of fit:</p>
+<pre class="r"><code>library(purrr)
+
+fits &lt;- list( fit1 = lm(hp~cyl,mtcars),
+              fit2 = lm(hp ~ cyl +mpg, mtcars),
+              fit3 = lm(hp~. , mtcars))
+
+map_df(fits,glance,.id = &quot;model&quot;) %&gt;% arrange(AIC)</code></pre>
+<pre><code>## # A tibble: 3 x 12
+##   model r.squared adj.r.squared sigma statistic p.value    df logLik   AIC   BIC
+##   &lt;chr&gt;     &lt;dbl&gt;         &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 fit3      0.903         0.857  26.0      19.5 1.90e-8    11  -143.  310.  327.
+## 2 fit1      0.693         0.683  38.6      67.7 3.48e-9     2  -161.  329.  333.
+## 3 fit2      0.709         0.689  38.2      35.4 1.66e-8     3  -160.  329.  335.
+## # ... with 2 more variables: deviance &lt;dbl&gt;, df.residual &lt;int&gt;</code></pre>
+<p>A more realistic application for broom are cases where you want to bootstrap the parameter estimates of a model</p>
+<p>Consider the model <span class="math display">\[mpg = \frac{k}{wt} + b + \epsilon, \sim Normal(0,\sigma^2)\]</span></p>
+<p>To estimate the bootstrapped estimates, you can do the following</p>
+<pre class="r"><code>library(rsample)
+boots &lt;- bootstraps(mtcars,times=100)</code></pre>
+<p>Function to fit non linear least squares</p>
+<pre class="r"><code>fit_nls_on_bootstrap &lt;- function(split) {
+  nls(
+    mpg ~ k/wt + b,
+    analysis(split),
+    start = list(k=1,b=0)
+  )
+}</code></pre>
+<p>Bootstrap as follows:</p>
+<pre class="r"><code>boot_fits &lt;- boots %&gt;%
+              mutate(fit = map(splits,fit_nls_on_bootstrap),
+                     coef_info = map(fit,tidy))
+
+head(boot_fits)</code></pre>
+<pre><code>## # A tibble: 6 x 4
+##   splits          id           fit       coef_info       
+## * &lt;list&gt;          &lt;chr&gt;        &lt;list&gt;    &lt;list&gt;          
+## 1 &lt;split [32/11]&gt; Bootstrap001 &lt;S3: nls&gt; &lt;tibble [2 x 5]&gt;
+## 2 &lt;split [32/10]&gt; Bootstrap002 &lt;S3: nls&gt; &lt;tibble [2 x 5]&gt;
+## 3 &lt;split [32/13]&gt; Bootstrap003 &lt;S3: nls&gt; &lt;tibble [2 x 5]&gt;
+## 4 &lt;split [32/11]&gt; Bootstrap004 &lt;S3: nls&gt; &lt;tibble [2 x 5]&gt;
+## 5 &lt;split [32/11]&gt; Bootstrap005 &lt;S3: nls&gt; &lt;tibble [2 x 5]&gt;
+## 6 &lt;split [32/11]&gt; Bootstrap006 &lt;S3: nls&gt; &lt;tibble [2 x 5]&gt;</code></pre>
+<p>Get bootstrapped coefficients</p>
+<pre class="r"><code>library(resample)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;resample&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:broom&#39;:
+## 
+##     bootstrap</code></pre>
+<pre class="r"><code>library(tidyr)
+
+data(&quot;mtcars&quot;)
+mtcars_bs &lt;- bootstraps(mtcars,times=20)
+boot_coefs &lt;- boot_fits %&gt;%
+                unnest(coef_info)
+
+head(boot_coefs)</code></pre>
+<pre><code>## # A tibble: 6 x 6
+##   id           term  estimate std.error statistic  p.value
+##   &lt;chr&gt;        &lt;chr&gt;    &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## 1 Bootstrap001 k        49.5       3.93     12.6  1.64e-13
+## 2 Bootstrap001 b         3.76      1.43      2.64 1.31e- 2
+## 3 Bootstrap002 k        45.5       4.40     10.3  2.08e-11
+## 4 Bootstrap002 b         4.40      1.50      2.93 6.41e- 3
+## 5 Bootstrap003 k        48.5       4.62     10.5  1.51e-11
+## 6 Bootstrap003 b         3.49      1.78      1.96 6.00e- 2</code></pre>
+<p>Plot bootstrapped estimates as follows</p>
+<pre class="r"><code>p &lt;- ggplot(boot_coefs,aes(estimate))+
+      geom_histogram(binwidth = 2) + facet_wrap(~ term,scales=&#39;free&#39;)+
+        labs(title = &quot;Sampling distribution of k and b&quot;,
+             y = &quot;Count&quot;,
+             x = &quot;Value&quot; )
+
+
+
+p</code></pre>
+<p><img src="/post/2019-03-17-r-studio-conference-2019_files/figure-html/unnamed-chunk-46-1.png" width="672" /></p>
+<p>We can also plot the bootstrapped predictions as follows</p>
+<pre class="r"><code>boot_aug &lt;- boot_fits %&gt;%
+              mutate(augmented = map(fit,augment))%&gt;%
+                unnest(augmented)
+
+
+ggplot(boot_aug,aes(wt,mpg))+
+  geom_point()+
+    geom_line(aes(y = .fitted,group =id),alpha =0.2)</code></pre>
+<p><img src="/post/2019-03-17-r-studio-conference-2019_files/figure-html/unnamed-chunk-47-1.png" width="672" /></p>
+</div>
+<div id="gganimate" class="section level2">
+<h2>gganimate</h2>
+<p>Package for animated graphics which extends ggplot2. Additional dependencies will have to be installed.</p>
+<pre class="r"><code>library(gapminder)
+library(gganimate)
+
+
+ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, colour = country)) +
+  geom_point(alpha = 0.7, show.legend = FALSE) +
+  scale_colour_manual(values = country_colors) +
+  scale_size(range = c(2, 12)) +
+  scale_x_log10() +
+  # Here comes the gganimate specific bits
+  labs(title = &#39;Year: {frame_time}&#39;, x = &#39;GDP per capita&#39;, y = &#39;life expectancy&#39;) +
+  transition_time(year) +
+  ease_aes(&#39;linear&#39;)</code></pre>
+<p><img src="/post/2019-03-17-r-studio-conference-2019_files/figure-html/unnamed-chunk-48-1.gif" /><!-- --></p>
+</div>
+<div id="hypothetical-outcome-plots" class="section level2">
+<h2>Hypothetical Outcome Plots</h2>
+<p>Hypothetical outcome plots provide an alternative way to visualize uncertainty by animating a finite set of individual draws rather than producing a static representation of distributions.</p>
+<p>Load required packages.</p>
+<pre class="r"><code>library(rsample)
+library(purrr)
+library(ggplot2)
+library(gganimate)
+library(transformr)</code></pre>
+<p>The plot below uses bootstrapped samples to visualize uncertainty in the trend line.</p>
+<pre class="r"><code>attach(mtcars)
+
+
+#Draw bootstrap samples
+
+mtcars_bs &lt;- bootstraps(mtcars,times=20)
+
+mtcars_bs_df &lt;- map_df(mtcars_bs$splits, function(x){
+                        return(as.data.frame(x))
+                        })
+
+mtcars_bs_df$id &lt;- rep(c(1:20),each=nrow(mtcars))
+
+
+mtcars %&gt;% 
+  ggplot(aes(disp,mpg))+
+    geom_point()+ 
+      geom_smooth(
+        data = mtcars_bs_df,
+        aes(group =id),
+        se = FALSE,
+        alpha = 0.6
+      )</code></pre>
+<p><img src="/post/2019-03-17-r-studio-conference-2019_files/figure-html/unnamed-chunk-50-1.png" width="672" /></p>
+<p>The same can be represented using a hypothetical outcome plot as follows</p>
+<pre class="r"><code>mtcars_bs_df %&gt;%
+  ggplot(aes(disp,mpg))+
+    geom_smooth(aes(group =id),se=FALSE,alpha=0.6)+
+      geom_point(data=mtcars)+
+        transition_states(id)</code></pre>
+<p><img src="/post/2019-03-17-r-studio-conference-2019_files/figure-html/unnamed-chunk-51-1.gif" /><!-- --></p>
+</div>
+<div id="datapasta" class="section level2">
+<h2>Datapasta</h2>
+<p>If you want to quickly copy some sample data from excel or SQL into R, you often have to convert it into csv or excel file and then import it or type it manually. Datapasta is an R Studio add in that provides a much easier alternative.</p>
+<p>After installing the package ‘datapasta’ , simply copy the table from an excel file, go to add ins and select the appropriate option.</p>
+<p>Here, I simply copied a table from excel using ‘Ctrl+C’ and then selected ‘Paste as data.frame’ from the add ins dropdown.</p>
+<pre class="r"><code>data.frame(stringsAsFactors=FALSE,
+        Name = c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;, &quot;E&quot;),
+       Marks = c(87L, 35L, 76L, 34L, 86L)
+)</code></pre>
+<pre><code>##   Name Marks
+## 1    A    87
+## 2    B    35
+## 3    C    76
+## 4    D    34
+## 5    E    86</code></pre>
+</div>
+<div id="vctrs" class="section level2">
+<h2>vctrs</h2>
+<p>This is another package from Hadley Wickham designed to make sure that outputs from functions are predictable.</p>
+<p>Sometimes, R does not behave predictable. For instance when combining two factors..</p>
+<pre class="r"><code>c(factor(&quot;a&quot;),factor(&quot;b&quot;))</code></pre>
+<pre><code>## [1] 1 1</code></pre>
+<p>Also..</p>
+<pre class="r"><code>today &lt;- as.Date(&#39;2019-02-23&#39;)
+tomorrow &lt;- as.POSIXct(&quot;2019-02-23 12:00&quot;,tz = &quot;America/Chicago&quot;)
+
+c(today,tomorrow)</code></pre>
+<pre><code>## [1] &quot;2019-02-23&quot;    &quot;4248312-08-21&quot;</code></pre>
+<p>Also..</p>
+<pre class="r"><code>c(NULL,tomorrow)</code></pre>
+<pre><code>## [1] 1550944800</code></pre>
+<p>The vctrs package formalizes the relationships between various datatypes and requires the user to be more explicit when combining different datatypes.</p>
+<p>To summarize:
+Logical –&gt; Integer –&gt; Double
+Date –&gt; Date-time
+Factor –&gt;Character
+Ordered –&gt; Character</p>
+<pre class="r"><code>library(vctrs)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;vctrs&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:lubridate&#39;:
+## 
+##     new_duration</code></pre>
+<p>When coercing to character , it is stricter than base R. vec_c below would throw an error</p>
+<pre class="r"><code>c(1.5,&quot;a&quot;)</code></pre>
+<pre><code>## [1] &quot;1.5&quot; &quot;a&quot;</code></pre>
+<pre class="r"><code>#vec_c(1.5,&quot;a&quot;)</code></pre>
+<p>Instead you have to be explicit..</p>
+<pre class="r"><code>vec_c(1.5,&quot;x&quot;,.ptype = character())</code></pre>
+<pre><code>## [1] &quot;1.5&quot; &quot;x&quot;</code></pre>
+<p>Unlike in base R, the following works..</p>
+<pre class="r"><code>vec_c(factor(&quot;a&quot;),factor(&quot;b&quot;))</code></pre>
+<pre><code>## [1] a b
+## Levels: a b</code></pre>
+<p>Note the order affects the levels..</p>
+<pre class="r"><code>vec_c(factor(&quot;b&quot;),factor(&quot;a&quot;))</code></pre>
+<pre><code>## [1] b a
+## Levels: b a</code></pre>
+<p>Similarly when concatenating a factor and an ordered factor…</p>
+<pre class="r"><code>c(factor(&quot;a&quot;),ordered(&quot;b&quot;))</code></pre>
+<pre><code>## [1] 1 1</code></pre>
+<p>The first call below would throw an error..</p>
+<pre class="r"><code>#vec_c(factor(&quot;a&quot;),ordered(&quot;b&quot;))
+vec_c(factor(&quot;a&quot;),ordered(&quot;b&quot;),.ptype = character())</code></pre>
+<pre><code>## [1] &quot;a&quot; &quot;b&quot;</code></pre>
+<p>The date problem does not occur here..</p>
+<pre class="r"><code>vec_c(today,tomorrow)</code></pre>
+<pre><code>## [1] &quot;2019-02-23 00:00:00 CST&quot; &quot;2019-02-23 12:00:00 CST&quot;</code></pre>
+<p>Disparate datatypes can be combined into a list</p>
+<pre class="r"><code>vec_c(today,factor(&quot;a&quot;),.ptype=list())</code></pre>
+<pre><code>## [[1]]
+## [1] &quot;2019-02-23&quot;
+## 
+## [[2]]
+## [1] a
+## Levels: a</code></pre>
+</div>
+<div id="tidy-evaluation" class="section level2">
+<h2>Tidy Evaluation</h2>
+<p>A tool for metaprogramming. This becomes important when you do not know the names of an object in advance and you want to build a tidyverse pipeline which operates on such objects. This is often the case when you have to operate on user inputs, say in a shiny application where you have to make indirect references with column names stored in variables or passed as function arguments.</p>
+<p>It is tidy evaluation that really allows you to use column names below without using quotes.</p>
+<pre class="r"><code>attach(starwars)
+
+starwars %&gt;%
+  filter(homeworld == &quot;Tatooine&quot;)%&gt;%
+    arrange(height)%&gt;%
+      select(name,ends_with(&quot;color&quot;))</code></pre>
+<pre><code>## # A tibble: 10 x 4
+##    name               hair_color  skin_color eye_color
+##    &lt;chr&gt;              &lt;chr&gt;       &lt;chr&gt;      &lt;chr&gt;    
+##  1 R5-D4              &lt;NA&gt;        white, red red      
+##  2 Shmi Skywalker     black       fair       brown    
+##  3 Beru Whitesun lars brown       light      blue     
+##  4 C-3PO              &lt;NA&gt;        gold       yellow   
+##  5 Luke Skywalker     blond       fair       blue     
+##  6 Owen Lars          brown, grey light      blue     
+##  7 Biggs Darklighter  black       light      brown    
+##  8 Cliegg Lars        brown       fair       blue     
+##  9 Anakin Skywalker   blond       fair       blue     
+## 10 Darth Vader        none        white      yellow</code></pre>
+<p>To evaluate an expression, the interpreter searches the environment for name-value bindings. In tidy eval, the expression is modified or the chain of searched environments is modified. This is what allows you to use unquoted variable names and work inside a dataframe. This is also referred to as <strong>non-standard evaluation</strong>.</p>
+<p>Tidy eval can be implemented in the following ways..</p>
+<ol style="list-style-type: decimal">
+<li>Using ‘…’</li>
+</ol>
+<pre class="r"><code>attach(mtcars)
+
+measure_hp &lt;- function(df,...){
+  df %&gt;%
+    group_by(...)%&gt;%
+      summarize(avg_hp = mean(hp,na.rm=TRUE))}
+
+measure_hp(mtcars,gear)</code></pre>
+<pre><code>## # A tibble: 3 x 2
+##    gear avg_hp
+##   &lt;dbl&gt;  &lt;dbl&gt;
+## 1     3  176. 
+## 2     4   89.5
+## 3     5  196.</code></pre>
+<ol start="2" style="list-style-type: decimal">
+<li>Using enquo and !!(called ‘bang!bang!’ operator)</li>
+</ol>
+<pre class="r"><code>measure&lt;- function(df,group_var,summary_var){
+  group_var &lt;- enquo(group_var) #Effectively quotes the variable
+  summary_var &lt;- enquo(summary_var)
+  
+  df %&gt;%
+    group_by(!!group_var)%&gt;%
+      summarize(avg_hp = mean(!!summary_var,na.rm=TRUE))}
+
+measure(mtcars,gear,hp)</code></pre>
+<pre><code>## # A tibble: 3 x 2
+##    gear avg_hp
+##   &lt;dbl&gt;  &lt;dbl&gt;
+## 1     3  176. 
+## 2     4   89.5
+## 3     5  196.</code></pre>
+<p>If you need to manipulate user input that is passed as character strings,you can do the following..</p>
+<pre class="r"><code>library(rlang)
+group_var &lt;- &#39;gear&#39;
+summary_var &lt;- &#39;hp&#39;
+
+measure(mtcars,!!rlang::sym(group_var),!!rlang::sym(summary_var))</code></pre>
+<pre><code>## # A tibble: 3 x 2
+##    gear avg_hp
+##   &lt;dbl&gt;  &lt;dbl&gt;
+## 1     3  176. 
+## 2     4   89.5
+## 3     5  196.</code></pre>
+<div id="action-and-selection-verbs" class="section level3">
+<h3>Action and Selection Verbs</h3>
+<p>dplyr verbs comes in two flavors - <strong>action</strong> and <strong>selection</strong>. <strong>select</strong> is a <em>selection</em> verb while verbs like mutate,group_by and transmute are action verbs.</p>
+<p>Action verbs created new vectors and modify the dataframe.Selection verbs look up the position of the columns in the dataframe and re-organizes the dataframe.</p>
+<p>Selection verbs are context aware and know about current variables.</p>
+<pre class="r"><code>starwars %&gt;% select(c(1:height))</code></pre>
+<pre><code>## # A tibble: 87 x 2
+##    name               height
+##    &lt;chr&gt;               &lt;int&gt;
+##  1 Luke Skywalker        172
+##  2 C-3PO                 167
+##  3 R2-D2                  96
+##  4 Darth Vader           202
+##  5 Leia Organa           150
+##  6 Owen Lars             178
+##  7 Beru Whitesun lars    165
+##  8 R5-D4                  97
+##  9 Biggs Darklighter     183
+## 10 Obi-Wan Kenobi        182
+## # ... with 77 more rows</code></pre>
+<pre class="r"><code>starwars %&gt;% select(1:height)</code></pre>
+<pre><code>## # A tibble: 87 x 2
+##    name               height
+##    &lt;chr&gt;               &lt;int&gt;
+##  1 Luke Skywalker        172
+##  2 C-3PO                 167
+##  3 R2-D2                  96
+##  4 Darth Vader           202
+##  5 Leia Organa           150
+##  6 Owen Lars             178
+##  7 Beru Whitesun lars    165
+##  8 R5-D4                  97
+##  9 Biggs Darklighter     183
+## 10 Obi-Wan Kenobi        182
+## # ... with 77 more rows</code></pre>
+<pre class="r"><code>starwars %&gt;% select(-1,-height)</code></pre>
+<pre><code>## # A tibble: 87 x 11
+##     mass hair_color skin_color eye_color birth_year gender homeworld species
+##    &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt;  &lt;chr&gt;     &lt;chr&gt;  
+##  1    77 blond      fair       blue            19   male   Tatooine  Human  
+##  2    75 &lt;NA&gt;       gold       yellow         112   &lt;NA&gt;   Tatooine  Droid  
+##  3    32 &lt;NA&gt;       white, bl~ red             33   &lt;NA&gt;   Naboo     Droid  
+##  4   136 none       white      yellow          41.9 male   Tatooine  Human  
+##  5    49 brown      light      brown           19   female Alderaan  Human  
+##  6   120 brown, gr~ light      blue            52   male   Tatooine  Human  
+##  7    75 brown      light      blue            47   female Tatooine  Human  
+##  8    32 &lt;NA&gt;       white, red red             NA   &lt;NA&gt;   Tatooine  Droid  
+##  9    84 black      light      brown           24   male   Tatooine  Human  
+## 10    77 auburn, w~ fair       blue-gray       57   male   Stewjon   Human  
+## # ... with 77 more rows, and 3 more variables: films &lt;list&gt;, vehicles &lt;list&gt;,
+## #   starships &lt;list&gt;</code></pre>
+<p>You can also use selection helpers as follows..</p>
+<pre class="r"><code>starwars %&gt;% select(ends_with(&quot;color&quot;)) %&gt;% head()</code></pre>
+<pre><code>## # A tibble: 6 x 3
+##   hair_color  skin_color  eye_color
+##   &lt;chr&gt;       &lt;chr&gt;       &lt;chr&gt;    
+## 1 blond       fair        blue     
+## 2 &lt;NA&gt;        gold        yellow   
+## 3 &lt;NA&gt;        white, blue red      
+## 4 none        white       yellow   
+## 5 brown       light       brown    
+## 6 brown, grey light       blue</code></pre>
+<pre class="r"><code>starwars %&gt;% select(dplyr::matches(&quot;^[nm]a&quot;)) %&gt;% head()</code></pre>
+<pre><code>## # A tibble: 6 x 2
+##   name            mass
+##   &lt;chr&gt;          &lt;dbl&gt;
+## 1 Luke Skywalker    77
+## 2 C-3PO             75
+## 3 R2-D2             32
+## 4 Darth Vader      136
+## 5 Leia Organa       49
+## 6 Owen Lars        120</code></pre>
+<pre class="r"><code>starwars %&gt;% select(10,everything()) %&gt;% head()</code></pre>
+<pre><code>## # A tibble: 6 x 13
+##   species name  height  mass hair_color skin_color eye_color birth_year gender
+##   &lt;chr&gt;   &lt;chr&gt;  &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; 
+## 1 Human   Luke~    172    77 blond      fair       blue            19   male  
+## 2 Droid   C-3PO    167    75 &lt;NA&gt;       gold       yellow         112   &lt;NA&gt;  
+## 3 Droid   R2-D2     96    32 &lt;NA&gt;       white, bl~ red             33   &lt;NA&gt;  
+## 4 Human   Dart~    202   136 none       white      yellow          41.9 male  
+## 5 Human   Leia~    150    49 brown      light      brown           19   female
+## 6 Human   Owen~    178   120 brown, gr~ light      blue            52   male  
+## # ... with 4 more variables: homeworld &lt;chr&gt;, films &lt;list&gt;, vehicles &lt;list&gt;,
+## #   starships &lt;list&gt;</code></pre>
+<p>group_by is an action verb, it does not work with selection helpers. The code below does not work.</p>
+<pre class="r"><code>#starwars %&gt;% group_by(ends_with&quot;color&quot;)</code></pre>
+<p>Instead you can use..</p>
+<pre class="r"><code>starwars %&gt;% group_by_at(vars(ends_with(&quot;color&quot;))) %&gt;% summarise(mean_height=mean(height))</code></pre>
+<pre><code>## # A tibble: 67 x 4
+## # Groups:   hair_color, skin_color [50]
+##    hair_color    skin_color       eye_color mean_height
+##    &lt;chr&gt;         &lt;chr&gt;            &lt;chr&gt;           &lt;dbl&gt;
+##  1 &lt;NA&gt;          gold             yellow            167
+##  2 &lt;NA&gt;          green            black             173
+##  3 &lt;NA&gt;          green-tan, brown orange            175
+##  4 &lt;NA&gt;          white, blue      red                96
+##  5 &lt;NA&gt;          white, red       red                97
+##  6 auburn        fair             blue              150
+##  7 auburn, grey  fair             blue              180
+##  8 auburn, white fair             blue-gray         182
+##  9 black         blue, grey       yellow            137
+## 10 black         brown            brown             171
+## # ... with 57 more rows</code></pre>
+</div>
+</div>
+<div id="profviz" class="section level2">
+<h2>profviz</h2>
+<p>profviz can be used to profile your code, identify modules that slow down the program and take corrective action.</p>
+<pre class="r"><code>library(profvis)
+#profvis::profvis(mtcars %&gt;% lm(mpg ~ wt +cyl,.))</code></pre>
+</div>
+<div id="using-spark-to-scale-out-your-jobs" class="section level2">
+<h2>Using Spark to scale out your jobs</h2>
+<p>Spark allows you to leverage compute from mutliple machines by distributing computations across multiple machines. The sparklyr package allows you to leverage the power of Spark through R.</p>
+<p>Although we connect to spark running on the local machine below, we can easily connect to a cluster provided by a cloud provider. Make sure Java is installed in a directory which does not have spaces or special characters. This <a href="https://forum.unity.com/threads/could-not-reserve-enough-space-for-object-heap-resolved.88119/">link</a> may also be useful</p>
+<pre class="r"><code>library(DBI)
+library(dplyr)
+library(sparklyr)                                   #R Interface to Apache Spark</code></pre>
+<pre><code>## 
+## Attaching package: &#39;sparklyr&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:rlang&#39;:
+## 
+##     invoke</code></pre>
+<pre><code>## The following object is masked from &#39;package:purrr&#39;:
+## 
+##     invoke</code></pre>
+<pre class="r"><code>#spark_install()                                    #Install Apache Spark
+
+#Add path to java to environment variables
+Sys.setenv(JAVA_HOME = &#39;C:/Users/learningmachine/Java/jre1.8.0_201&#39;)
+
+
+sc &lt;- spark_connect(master = &#39;local&#39;)               #Connect to local cluster
+##Make sure you have the mtcars.csv file in your working directory
+cars_tbl &lt;- spark_read_csv(sc,&quot;cars&quot;,&quot;mtcars.csv&quot;)     #Read data into spark
+
+summarize(cars_tbl, n =n())                         #Count records with dplyr</code></pre>
+<pre><code>## # Source: spark&lt;?&gt; [?? x 1]
+##       n
+##   &lt;dbl&gt;
+## 1    32</code></pre>
+<pre class="r"><code>dbGetQuery(sc,&quot;SELECT count(*) FROM cars&quot;)          # COunt records with DBI</code></pre>
+<pre><code>##   count(1)
+## 1       32</code></pre>
+<p>Perform linear regression</p>
+<pre class="r"><code>ml_linear_regression(cars_tbl,mpg~wt+cyl)</code></pre>
+<pre><code>## Formula: mpg ~ wt + cyl
+## 
+## Coefficients:
+## (Intercept)          wt         cyl 
+##   39.686261   -3.190972   -1.507795</code></pre>
+<p>You can also define a pipeline and run it on a spark cluster and save it to disk.</p>
+<pre class="r"><code>pipeline &lt;- ml_pipeline(sc) %&gt;%                #Define Spark pipleine
+              ft_r_formula(mpg~wt + cyl)%&gt;%    #Add formula translation
+                ml_linear_regression()         #Add model to pipeline
+
+fitted &lt;- ml_fit(pipeline,cars_tbl)
+fitted</code></pre>
+<pre><code>## PipelineModel (Transformer) with 2 stages
+## &lt;pipeline_10c381e317aae&gt; 
+##   Stages 
+##   |--1 RFormulaModel (Transformer)
+##   |    &lt;r_formula_10c385d7c6f41&gt; 
+##   |     (Parameters -- Column Names)
+##   |      features_col: features
+##   |      label_col: label
+##   |     (Transformer Info)
+##   |      formula:  chr &quot;mpg ~ wt + cyl&quot; 
+##   |--2 LinearRegressionModel (Transformer)
+##   |    &lt;linear_regression_10c384c9571fc&gt; 
+##   |     (Parameters -- Column Names)
+##   |      features_col: features
+##   |      label_col: label
+##   |      prediction_col: prediction
+##   |     (Transformer Info)
+##   |      coefficients:  num [1:2] -3.19 -1.51 
+##   |      intercept:  num 39.7 
+##   |      num_features:  int 2 
+##   |      scale:  num 1</code></pre>
+<pre class="r"><code>#ml_save(fitted,&quot;mtcars_model&quot;,overwrite = TRUE)</code></pre>
+<p>The sparklyr output of a saved Spark ML Pipeline object is in Scala code, which means that the code can be added to the scheduled Spark ML jobs, and without any dependencies in R.</p>
+</div>
+<div id="shiny" class="section level2">
+<h2>Shiny</h2>
+<p>Some resources worth exploring on shiny and included in the link shared at the beginning of the document are</p>
+<ol style="list-style-type: decimal">
+<li><p>Modules: How to compartmentalize your shiny application into modules for easier maintenance and concurrent development</p></li>
+<li><p>Reactlog 2.0: Library built in Javascript that allows for easier debugging by visualizing reactive dependencies in the app. Th goto tool for reactivity debugging</p></li>
+</ol>
+</div>
+<div id="miscellaneous" class="section level2">
+<h2>Miscellaneous</h2>
+<div id="sunburst-charts" class="section level3">
+<h3>Sunburst Charts</h3>
+<p>Pretty cool visualization for representing hierarchical data using concentric circles.</p>
+<pre class="r"><code>library(sunburstR)
+sequences &lt;- read.csv(
+  system.file(&quot;examples/visit-sequences.csv&quot;,package=&quot;sunburstR&quot;)
+  ,header=F
+  ,stringsAsFactors = FALSE
+)
+
+sunburst(sequences)</code></pre>
+<div class="sunburst html-widget" id="htmlwidget-1" style="width:672px;height:480px; position:relative;">
+<div>
+<div class="sunburst-main">
+<div class="sunburst-sequence"></div>
+<div class="sunburst-chart">
+<div class="sunburst-explanation" style="visibility:hidden;"></div>
+</div>
+</div>
+<div class="sunburst-sidebar">
+<input type="checkbox" class="sunburst-togglelegend" style="visibility:hidden;">Legend</input>
+<div class="sunburst-legend" style="visibility:hidden;"></div>
+</div>
+</div>
+</div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"data":{"children":[{"name":"account","children":[{"name":"account","children":[{"name":"account","children":[{"name":"account","children":[{"name":"account","children":[{"name":"account","size":22781,"colname":"X6"},{"name":"end","size":3311,"colname":"X6"},{"name":"home","size":906,"colname":"X6"},{"name":"other","size":1156,"colname":"X6"},{"name":"product","size":5969,"colname":"X6"},{"name":"search","size":692,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":7059,"colname":"X5"},{"name":"home","children":[{"name":"account","size":396,"colname":"X6"},{"name":"end","size":316,"colname":"X6"},{"name":"home","size":226,"colname":"X6"},{"name":"other","size":87,"colname":"X6"},{"name":"product","size":613,"colname":"X6"},{"name":"search","size":245,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"account","size":446,"colname":"X6"},{"name":"end","size":229,"colname":"X6"},{"name":"home","size":91,"colname":"X6"},{"name":"other","size":804,"colname":"X6"},{"name":"product","size":776,"colname":"X6"},{"name":"search","size":48,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":3892,"colname":"X6"},{"name":"end","size":3250,"colname":"X6"},{"name":"home","size":531,"colname":"X6"},{"name":"other","size":252,"colname":"X6"},{"name":"product","size":4876,"colname":"X6"},{"name":"search","size":476,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":521,"colname":"X6"},{"name":"end","size":39,"colname":"X6"},{"name":"home","size":7,"colname":"X6"},{"name":"other","size":8,"colname":"X6"},{"name":"product","size":536,"colname":"X6"},{"name":"search","size":219,"colname":"X6"}],"colname":"X5"}],"colname":"X4"},{"name":"end","children":[],"size":14262,"colname":"X4"},{"name":"home","children":[{"name":"account","children":[{"name":"account","size":434,"colname":"X6"},{"name":"end","size":83,"colname":"X6"},{"name":"home","size":71,"colname":"X6"},{"name":"other","size":39,"colname":"X6"},{"name":"product","size":159,"colname":"X6"},{"name":"search","size":24,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":722,"colname":"X5"},{"name":"home","children":[{"name":"account","size":103,"colname":"X6"},{"name":"end","size":64,"colname":"X6"},{"name":"home","size":76,"colname":"X6"},{"name":"other","size":57,"colname":"X6"},{"name":"product","size":116,"colname":"X6"},{"name":"search","size":47,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"account","size":32,"colname":"X6"},{"name":"end","size":13,"colname":"X6"},{"name":"home","size":21,"colname":"X6"},{"name":"other","size":93,"colname":"X6"},{"name":"product","size":33,"colname":"X6"},{"name":"search","size":6,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":252,"colname":"X6"},{"name":"end","size":304,"colname":"X6"},{"name":"home","size":258,"colname":"X6"},{"name":"other","size":25,"colname":"X6"},{"name":"product","size":573,"colname":"X6"},{"name":"search","size":69,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":119,"colname":"X6"},{"name":"end","size":20,"colname":"X6"},{"name":"home","size":13,"colname":"X6"},{"name":"other","size":1,"colname":"X6"},{"name":"product","size":276,"colname":"X6"},{"name":"search","size":103,"colname":"X6"}],"colname":"X5"}],"colname":"X4"},{"name":"other","children":[{"name":"account","children":[{"name":"account","size":486,"colname":"X6"},{"name":"end","size":99,"colname":"X6"},{"name":"home","size":28,"colname":"X6"},{"name":"other","size":130,"colname":"X6"},{"name":"product","size":172,"colname":"X6"},{"name":"search","size":31,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":636,"colname":"X5"},{"name":"home","children":[{"name":"account","size":33,"colname":"X6"},{"name":"end","size":42,"colname":"X6"},{"name":"home","size":23,"colname":"X6"},{"name":"other","size":15,"colname":"X6"},{"name":"product","size":61,"colname":"X6"},{"name":"search","size":20,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"account","size":312,"colname":"X6"},{"name":"end","size":239,"colname":"X6"},{"name":"home","size":92,"colname":"X6"},{"name":"other","size":741,"colname":"X6"},{"name":"product","size":488,"colname":"X6"},{"name":"search","size":48,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":315,"colname":"X6"},{"name":"end","size":881,"colname":"X6"},{"name":"home","size":84,"colname":"X6"},{"name":"other","size":190,"colname":"X6"},{"name":"product","size":1400,"colname":"X6"},{"name":"search","size":77,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":25,"colname":"X6"},{"name":"end","size":5,"colname":"X6"},{"name":"other","size":1,"colname":"X6"},{"name":"product","size":39,"colname":"X6"},{"name":"search","size":22,"colname":"X6"}],"colname":"X5"}],"colname":"X4"},{"name":"product","children":[{"name":"account","children":[{"name":"account","size":3948,"colname":"X6"},{"name":"end","size":721,"colname":"X6"},{"name":"home","size":154,"colname":"X6"},{"name":"other","size":201,"colname":"X6"},{"name":"product","size":2369,"colname":"X6"},{"name":"search","size":189,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":7344,"colname":"X5"},{"name":"home","children":[{"name":"account","size":198,"colname":"X6"},{"name":"end","size":239,"colname":"X6"},{"name":"home","size":122,"colname":"X6"},{"name":"other","size":52,"colname":"X6"},{"name":"product","size":526,"colname":"X6"},{"name":"search","size":175,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"account","size":120,"colname":"X6"},{"name":"end","size":74,"colname":"X6"},{"name":"home","size":23,"colname":"X6"},{"name":"other","size":226,"colname":"X6"},{"name":"product","size":189,"colname":"X6"},{"name":"search","size":13,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":1863,"colname":"X6"},{"name":"end","size":2561,"colname":"X6"},{"name":"home","size":395,"colname":"X6"},{"name":"other","size":160,"colname":"X6"},{"name":"product","size":5934,"colname":"X6"},{"name":"search","size":407,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":281,"colname":"X6"},{"name":"end","size":37,"colname":"X6"},{"name":"home","size":5,"colname":"X6"},{"name":"other","size":3,"colname":"X6"},{"name":"product","size":594,"colname":"X6"},{"name":"search","size":191,"colname":"X6"}],"colname":"X5"}],"colname":"X4"},{"name":"search","children":[{"name":"account","children":[{"name":"account","size":567,"colname":"X6"},{"name":"end","size":69,"colname":"X6"},{"name":"home","size":26,"colname":"X6"},{"name":"other","size":25,"colname":"X6"},{"name":"product","size":253,"colname":"X6"},{"name":"search","size":78,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":120,"colname":"X5"},{"name":"home","children":[{"name":"account","size":2,"colname":"X6"},{"name":"end","size":4,"colname":"X6"},{"name":"home","size":3,"colname":"X6"},{"name":"product","size":14,"colname":"X6"},{"name":"search","size":4,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"account","size":2,"colname":"X6"},{"name":"end","size":3,"colname":"X6"},{"name":"home","size":4,"colname":"X6"},{"name":"other","size":6,"colname":"X6"},{"name":"product","size":7,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":189,"colname":"X6"},{"name":"end","size":257,"colname":"X6"},{"name":"home","size":33,"colname":"X6"},{"name":"other","size":12,"colname":"X6"},{"name":"product","size":550,"colname":"X6"},{"name":"search","size":192,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":113,"colname":"X6"},{"name":"end","size":27,"colname":"X6"},{"name":"home","size":9,"colname":"X6"},{"name":"other","size":7,"colname":"X6"},{"name":"product","size":208,"colname":"X6"},{"name":"search","size":121,"colname":"X6"}],"colname":"X5"}],"colname":"X4"}],"colname":"X3"},{"name":"end","children":[],"size":49154,"colname":"X3"},{"name":"home","children":[{"name":"account","children":[{"name":"account","children":[{"name":"account","size":470,"colname":"X6"},{"name":"end","size":119,"colname":"X6"},{"name":"home","size":139,"colname":"X6"},{"name":"other","size":42,"colname":"X6"},{"name":"product","size":365,"colname":"X6"},{"name":"search","size":39,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":273,"colname":"X5"},{"name":"home","children":[{"name":"account","size":72,"colname":"X6"},{"name":"end","size":42,"colname":"X6"},{"name":"home","size":25,"colname":"X6"},{"name":"other","size":11,"colname":"X6"},{"name":"product","size":71,"colname":"X6"},{"name":"search","size":23,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"account","size":9,"colname":"X6"},{"name":"end","size":6,"colname":"X6"},{"name":"home","size":7,"colname":"X6"},{"name":"other","size":54,"colname":"X6"},{"name":"product","size":22,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":124,"colname":"X6"},{"name":"end","size":110,"colname":"X6"},{"name":"home","size":60,"colname":"X6"},{"name":"other","size":8,"colname":"X6"},{"name":"product","size":191,"colname":"X6"},{"name":"search","size":25,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":23,"colname":"X6"},{"name":"end","size":1,"colname":"X6"},{"name":"home","size":2,"colname":"X6"},{"name":"product","size":29,"colname":"X6"},{"name":"search","size":11,"colname":"X6"}],"colname":"X5"}],"colname":"X4"},{"name":"end","children":[],"size":2878,"colname":"X4"},{"name":"home","children":[{"name":"account","children":[{"name":"account","size":167,"colname":"X6"},{"name":"end","size":37,"colname":"X6"},{"name":"home","size":43,"colname":"X6"},{"name":"other","size":30,"colname":"X6"},{"name":"product","size":45,"colname":"X6"},{"name":"search","size":14,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":227,"colname":"X5"},{"name":"home","children":[{"name":"account","size":42,"colname":"X6"},{"name":"end","size":30,"colname":"X6"},{"name":"home","size":82,"colname":"X6"},{"name":"other","size":26,"colname":"X6"},{"name":"product","size":62,"colname":"X6"},{"name":"search","size":21,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"account","size":29,"colname":"X6"},{"name":"end","size":7,"colname":"X6"},{"name":"home","size":15,"colname":"X6"},{"name":"other","size":61,"colname":"X6"},{"name":"product","size":22,"colname":"X6"},{"name":"search","size":2,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":83,"colname":"X6"},{"name":"end","size":104,"colname":"X6"},{"name":"home","size":90,"colname":"X6"},{"name":"other","size":14,"colname":"X6"},{"name":"product","size":208,"colname":"X6"},{"name":"search","size":24,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":46,"colname":"X6"},{"name":"end","size":5,"colname":"X6"},{"name":"home","size":6,"colname":"X6"},{"name":"product","size":92,"colname":"X6"},{"name":"search","size":34,"colname":"X6"}],"colname":"X5"}],"colname":"X4"},{"name":"other","children":[{"name":"account","children":[{"name":"account","size":51,"colname":"X6"},{"name":"end","size":9,"colname":"X6"},{"name":"home","size":7,"colname":"X6"},{"name":"other","size":7,"colname":"X6"},{"name":"product","size":24,"colname":"X6"},{"name":"search","size":3,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":56,"colname":"X5"},{"name":"home","children":[{"name":"account","size":12,"colname":"X6"},{"name":"end","size":22,"colname":"X6"},{"name":"home","size":9,"colname":"X6"},{"name":"other","size":3,"colname":"X6"},{"name":"product","size":26,"colname":"X6"},{"name":"search","size":8,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"account","size":34,"colname":"X6"},{"name":"end","size":34,"colname":"X6"},{"name":"home","size":34,"colname":"X6"},{"name":"other","size":104,"colname":"X6"},{"name":"product","size":56,"colname":"X6"},{"name":"search","size":4,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":16,"colname":"X6"},{"name":"end","size":35,"colname":"X6"},{"name":"home","size":17,"colname":"X6"},{"name":"other","size":11,"colname":"X6"},{"name":"product","size":59,"colname":"X6"},{"name":"search","size":3,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":6,"colname":"X6"},{"name":"product","size":6,"colname":"X6"}],"colname":"X5"}],"colname":"X4"},{"name":"product","children":[{"name":"account","children":[{"name":"account","size":409,"colname":"X6"},{"name":"end","size":78,"colname":"X6"},{"name":"home","size":103,"colname":"X6"},{"name":"other","size":26,"colname":"X6"},{"name":"product","size":276,"colname":"X6"},{"name":"search","size":30,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":1277,"colname":"X5"},{"name":"home","children":[{"name":"account","size":133,"colname":"X6"},{"name":"end","size":220,"colname":"X6"},{"name":"home","size":93,"colname":"X6"},{"name":"other","size":27,"colname":"X6"},{"name":"product","size":579,"colname":"X6"},{"name":"search","size":92,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"account","size":5,"colname":"X6"},{"name":"end","size":4,"colname":"X6"},{"name":"home","size":4,"colname":"X6"},{"name":"other","size":20,"colname":"X6"},{"name":"product","size":22,"colname":"X6"},{"name":"search","size":1,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":260,"colname":"X6"},{"name":"end","size":534,"colname":"X6"},{"name":"home","size":296,"colname":"X6"},{"name":"other","size":26,"colname":"X6"},{"name":"product","size":1113,"colname":"X6"},{"name":"search","size":97,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":46,"colname":"X6"},{"name":"end","size":6,"colname":"X6"},{"name":"home","size":5,"colname":"X6"},{"name":"product","size":149,"colname":"X6"},{"name":"search","size":43,"colname":"X6"}],"colname":"X5"}],"colname":"X4"},{"name":"search","children":[{"name":"account","children":[{"name":"account","size":201,"colname":"X6"},{"name":"end","size":27,"colname":"X6"},{"name":"home","size":25,"colname":"X6"},{"name":"other","size":6,"colname":"X6"},{"name":"product","size":72,"colname":"X6"},{"name":"search","size":20,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":80,"colname":"X5"},{"name":"home","children":[{"name":"account","size":7,"colname":"X6"},{"name":"end","size":5,"colname":"X6"},{"name":"home","size":4,"colname":"X6"},{"name":"product","size":8,"colname":"X6"},{"name":"search","size":12,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"end","size":2,"colname":"X6"},{"name":"other","size":3,"colname":"X6"},{"name":"product","size":2,"colname":"X6"},{"name":"search","size":1,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":79,"colname":"X6"},{"name":"end","size":212,"colname":"X6"},{"name":"home","size":68,"colname":"X6"},{"name":"other","size":7,"colname":"X6"},{"name":"product","size":478,"colname":"X6"},{"name":"search","size":156,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":40,"colname":"X6"},{"name":"end","size":25,"colname":"X6"},{"name":"home","size":5,"colname":"X6"},{"name":"other","size":1,"colname":"X6"},{"name":"product","size":170,"colname":"X6"},{"name":"search","size":88,"colname":"X6"}],"colname":"X5"}],"colname":"X4"}],"colname":"X3"},{"name":"other","children":[{"name":"account","children":[{"name":"account","children":[{"name":"account","size":596,"colname":"X6"},{"name":"end","size":131,"colname":"X6"},{"name":"home","size":42,"colname":"X6"},{"name":"other","size":124,"colname":"X6"},{"name":"product","size":270,"colname":"X6"},{"name":"search","size":34,"colname":"X6"}],"colname":"X5"},{"name":"end","children":[],"size":246,"colname":"X5"},{"name":"home","children":[{"name":"account","size":15,"colname":"X6"},{"name":"end","size":15,"colname":"X6"},{"name":"home","size":8,"colname":"X6"},{"name":"other","size":2,"colname":"X6"},{"name":"product","size":43,"colname":"X6"},{"name":"search","size":4,"colname":"X6"}],"colname":"X5"},{"name":"other","children":[{"name":"account","size":98,"colname":"X6"},{"name":"end","size":31,"colname":"X6"},{"name":"home","size":6,"colname":"X6"},{"name":"other","size":123,"colname":"X6"},{"name":"product","size":85,"colname":"X6"},{"name":"search","size":4,"colname":"X6"}],"colname":"X5"},{"name":"product","children":[{"name":"account","size":160,"colname":"X6"},{"name":"end","size":78,"colname":"X6"},{"name":"home","size":24,"colname":"X6"},{"name":"other","size":32,"colname":"X6"},{"name":"product","size":157,"colname":"X6"},{"name":"search","size":13,"colname":"X6"}],"colname":"X5"},{"name":"search","children":[{"name":"account","size":18,"colname":"X6"},{"name":"end","size":1,"colname":"X6"},{"name":"product","size":42,"colname":"X6"},{"name":"search","size":10,"colname":"X6"}],"colname":"X5"}],"colname":"X4"}],"colname":"X3"}],"colname":"X2"}],"colname":"X1"}],"name":"root"},"options":{"legendOrder":null,"colors":null,"valueField":"size","percent":true,"count":false,"explanation":null,"breadcrumb":[],"legend":[],"sortFunction":null,"sumNodes":true}},"evals":[],"jsHooks":[]}</script>
+</div>
+<div id="rayshader" class="section level3">
+<h3>rayshader</h3>
+<p>This is a really cool package. According to the documentation:</p>
+<p><em>rayshader uses a combination of raytracing, spherical texture mapping, lambertian reflectance, and ambient occlusion to produce hillshades of elevation matrices. Includes water detection and layering functions, programmable color palette generation, several built-in textures, 2D and 3D plotting options, and the ability to export 3D maps to a 3D printable format.</em></p>
+<p>Try running the code below to see some really cool 3d visualizations.</p>
+<pre class="r"><code>library(rayshader)
+
+montereybay %&gt;%
+sphere_shade(texture=&quot;imhof2&quot;) %&gt;%
+plot_3d(montereybay, zscale=50, water = TRUE, watercolor=&quot;imhof2&quot;,
+waterlinecolor=&quot;white&quot;, waterlinealpha=0.5)</code></pre>
+</div>
+</div>
+<div id="other-usefulinteresting-resources" class="section level2">
+<h2>Other useful/interesting resources</h2>
+<ol style="list-style-type: decimal">
+<li><p>Best practices for naming files: <a href="https://speakerdeck.com/jennybc/how-to-name-files?slide=27">link</a></p></li>
+<li><p>mlflow for tracking ML experiments,sharing and deploying : <a href="https://www.mlflow.org/docs/latest/tutorial.html">link</a></p></li>
+<li><p>All the risk calculators at <a href="http://riskcalc.org/" class="uri">http://riskcalc.org/</a> were built by Cleveland Clinic using Shiny</p></li>
+</ol>
+</div>

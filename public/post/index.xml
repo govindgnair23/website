@@ -6,10 +6,20 @@
     <description>Recent content in Posts on Govind G Nair</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 11 Aug 2019 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Sat, 04 Apr 2020 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>A Citizen&#39;s guide to the Economics of a City</title>
+      <link>/2020/04/04/a-citizen-s-guide-to-the-economics-of-a-city/</link>
+      <pubDate>Sat, 04 Apr 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/2020/04/04/a-citizen-s-guide-to-the-economics-of-a-city/</guid>
+      <description>The world is rapidly urbanizing. More than half the world lives in urban areas. By 2050, it is projected that close to 7 billion people will live in urban areas in 2050. If you are reading this, you are almost certainly living in a city.
+This blog post is in essence a selective synopsis of the fantastic book - Order Without Design — How Markets Shape Cities’ by Alain Bertaud. The book is largely targeted at urban planners and is probably not going to be a NY Times best seller.</description>
+    </item>
     
     <item>
       <title>Introduction to Gaussian Processes</title>
@@ -20,6 +30,17 @@
       <description>Gaussian DistributionsFundamental to understanding a Gaussian process is a Gaussian distribution.The 1 dimensional version of the Gaussian distribution is the Normal distribution or the Bell Curve.
 The plot of a standard normal distribution with mean 0 and variance 1 is shown below. Note that the curve doesn’t look like a perfect bell as the data has been simulated
 set.seed(0)plot(density(rnorm(100000)),main = bquote(&amp;quot;N(&amp;quot;~mu~&amp;quot;=0,&amp;quot;~sigma^2~&amp;quot;=1)&amp;quot;))A bi-variate Gaussian distribution is simply a Gaussian distribution in 2 dimensions.</description>
+    </item>
+    
+    <item>
+      <title>R Studio Conference 2019</title>
+      <link>/2019/03/17/r-studio-conference-2019/</link>
+      <pubDate>Sun, 17 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/2019/03/17/r-studio-conference-2019/</guid>
+      <description>This is a notebook summarizing what I learned at the R Studio Conference 2019 Links to all the talks and slide decks,including talks on how to use R in production at scale are available at https://github.com/kbroman/RStudioConf2019Slides
+Make sure the libraries being used in each section are installed.
+Reproducible Examples with reprexThe reprex package allows you to create a minimal reproducible example that you can share if you are reporting an issue on Github or asking a question on stack overflow.</description>
     </item>
     
     <item>

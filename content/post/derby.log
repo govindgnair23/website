@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Sat Apr 18 15:18:06 EDT 2020:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-0171-8eb9-fea9-000001390260 
+on database directory memory:C:\Users\learningmachine\Documents\Blogs\R Studio Blog\content\post\databaseName=metastore_db with class loader sun.misc.Launcher$AppClassLoader@1a8a1dc 
+Loaded from file:/C:/Users/learningmachine/AppData/Local/spark/spark-2.4.0-bin-hadoop2.7/jars/derby-10.12.1.1.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.8.0_201-b09
+user.dir=C:\Users\learningmachine\Documents\Blogs\R Studio Blog\content\post
+os.name=Windows 10
+os.arch=x86
+os.version=10.0
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

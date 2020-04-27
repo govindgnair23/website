@@ -10,3 +10,4 @@ My name is Govind G Nair. I am a Technical Product Manager @ Oracle where I work
 I am a data scientist, a newbie product manager and an infinite learner constantly seeking to become wiser every single day.
 
 > *Wisdom is not a product of schooling but the lifelong attempt to acquire it* - Albert Einstein
+
